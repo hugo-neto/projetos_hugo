@@ -52,26 +52,23 @@ void move(int direcao[4]){
 
 void printa_vetor(int posicao[4]){
     char *direcao[4] = {"NORTE", "LESTE", "SUL", "OESTE"};
+    //                    [0]      [1]     [2]     [3]
     int k;
 
     switch (posicao[3]){
     case 0:
-        //direcao[0] = "NORTE";
         k = 0;
         break;
     
-    case 1:
-        //direcao[0] = "LESTE";
+    case 1:;
         k = 1;
         break;
     
     case 2:
-        //direcao[0] = "SUL";
         k = 2;
         break;
     
     case 3:
-        //direcao[0] = "OESTE";
         k = 3;
         break;
     
@@ -101,10 +98,13 @@ int main(){
         j++;
         switch (n){
         case 'u':
+        //1 para verdadeiro que é = à 
+        // subir no código
             sobe_desce(&posicao[2], 1);
             break;
         
         case 'd':
+        //0 para falso = descer submarino
             sobe_desce(&posicao[2], 0);
             break;
 
@@ -121,7 +121,8 @@ int main(){
             break;
 
         default:
-            printf("\nEntrou no dedault");
+            printf("\nO comando '%c' não consta como opção de movimento\n", n);
+            printf("ERRO NÃO FATAL");
             break;
         }
     }
