@@ -19,29 +19,53 @@ Para cada caso de teste da entrada seu programa deve imprimir uma única linha n
 Exemplo de Entrada 	Exemplo de Saída
 
 3
+
 um circulo
-dois circulos
+
+dois circulos 
+
 tres circulos
+
 Saída = 1
+
 
 3
+
 um triangulo
+
 tres quadrados
+
 dois circulos
+
 Saída = 1
 
+
 6
+
 dois quadrados
+
 dois quadrados
+
 dois quadrados
+
 dois quadrados
+
 dois quadrados
+
 dois quadrados
+
 Saída = 2
 
+
 4
+
 um quadrado
+
 tres triangulos
+
 um quadrado
+
 dois triangulos
+
 Saída = 0
+
