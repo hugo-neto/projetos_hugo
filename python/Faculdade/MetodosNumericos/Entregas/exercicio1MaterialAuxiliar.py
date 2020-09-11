@@ -8,6 +8,8 @@ def plota_grafico():
     #[a,b (intervalo a,b) ,nº de subdivisões]
     x = np.linspace(-1, 1, 10000)
     #f(x) = cos(x)
+    #f(x) pode ser seno!
+    #y = np.sin(x)
     y = np.cos(x)
     
     r = (313*x**4 - 6900*x**2 + 15120)/(13*x**4 + 660*x**2 + 15120)
