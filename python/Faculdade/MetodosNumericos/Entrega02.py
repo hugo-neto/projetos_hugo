@@ -1,3 +1,7 @@
+# Criador: Hugo de Lacerda Coutinho Neto
+# Métodos Numéricos
+# DRE: 118060251
+# 02/10/2020
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,9 +10,7 @@ x, aux = np.linspace(0, 10, 500), -1
 
 y = [-0.4, 0.4, 0.5, 0.4]
 x = [-0.5, 0.5, 1, 2]
-x_user = [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 2.51]
-y_user = []
-p = []
+x_user, y_user, p = [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 2.51], [], []
 
 
 def limpa_interpoladores(p):
@@ -80,7 +82,5 @@ def main(xe, x, y, p):
     grafico(x, y, p)
 
 
-if __name__== '__main__':
-    xe = 1.1   
-    main(xe, x, y, p)
-
+if __name__== '__main__':   
+    main(1.1, x, y, p)
