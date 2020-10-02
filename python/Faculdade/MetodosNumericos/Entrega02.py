@@ -13,6 +13,12 @@ x = [-0.5, 0.5, 1, 2]
 x_user, y_user, p = [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 2.51], [], []
 
 
+def printa_user(x_user, y_user):
+    print("Abaixo mostramos alguns valores de x e f(x) calculados")
+    for i in range(0,len(x_user)):        
+        print(f"x{i} {x_user[i]} = {y_user[i]}")
+
+
 def limpa_interpoladores(p):
     p.clear()
 
@@ -63,23 +69,20 @@ def grafico(x, y, p):
     x3 = np.array(x_user)
     y3 = np.array(y_user)  
 
-    primeiros_pontos, = ax.plot(x1, y1, label='Pontos Interpoladores')
+    primeiros_pontos, = ax.plot(x1, y1, label='Pontos Tabela')
+    primeiros_pontos.set_dashes([2, 2, 10, 2])
+    segundos_pontos, = ax.plot(x3, y3, label='Pontos Interpolados')    
+    segundos_pontos.set_dashes([2, 2, 10, 2])   
     funcao_lagrange, = ax.plot(x2, fx, label='f(x)')
-    funcao_lagrange.set_dashes([2, 2, 10, 2])
-    segundos_pontos, = ax.plot(x3, y3, label='Pontos Usuário')    
-    
+
     ax.legend()    
     plt.show()
 
 
 def main(xe, x, y, p):
-    
-    for _ in range(0,4):
-        xe = xe + 0.1    
-        final = interpoladores_lagrange(xe, x, y, p)
-        print(final)
     gera_y_user(x_user)
     grafico(x, y, p)
+    printa_user(x_user, y_user)
 
 
 if __name__== '__main__':   
