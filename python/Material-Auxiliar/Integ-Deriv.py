@@ -11,3 +11,5 @@ diff(x**3)
 valor = Integral(((A/x + B + C * x + D * x ** -3)), (x,400,600)).doit()
 # Resolve a integral definida
 
+solve(x**2 - 1)
+# Resolve essa eq. de segundo grau
