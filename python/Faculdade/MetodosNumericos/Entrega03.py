@@ -42,7 +42,7 @@ def wegstein(a, b):
 
     if k < 100:
         print("Raiz encontrada!")
-        print(f"Para o intervalo [{ai},{bi}] termos:")
+        print(f"Para o intervalo [{ai},{bi}] com {k} interações termos:")
         print(f"| x0 = {x0} | f(x0) = {f(x0)} |")
     else:
         print("Não fora possível identificar as raízes para o intervalo indicado.")
