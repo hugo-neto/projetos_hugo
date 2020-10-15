@@ -18,13 +18,14 @@ def f(x):
 
 def wegstein(a, b):
     fa, fb = f(a), f(b)
-    
+    ai, bi = a, b
+
     if fa*fb > 0:
         print("Entre com novos valores de a e b:")
-        a = input("Digite o valor de a: ")
-        b = input("Digite o valor de b: ")
+        a = float(input("Digite o valor de a: "))
+        b = float(input("Digite o valor de b: "))
 
-    y, k = 1, 0
+    y, delta1, k = 1, 1, 0
     while (delta1 > epslon or abs(y) > delta2) and k < kmax:
         multiplicador = fa/(fa - fb)
         x0 = a + multiplicador*(b - a)
@@ -39,8 +40,9 @@ def wegstein(a, b):
         delta1 = abs(b-a)
         k = k + 1
 
-    if kmax > 100:
+    if k < 100:
         print("Raiz encontrada!")
+        print(f"Para o intervalo [{ai},{bi}] termos:")
         print(f"| x0 = {x0} | f(x0) = {f(x0)} |")
     else:
         print("Não fora possível identificar as raízes para o intervalo indicado.")
@@ -79,10 +81,11 @@ def grafico():
 
 
 def main():     
-    a = input("Digite o valor de a: ")
-    b = input("Digite o valor de b: ")
+    a = float(input("Digite o valor de a: "))
+    b = float(input("Digite o valor de b: "))
     wegstein(a, b)
     grafico()
 
 if __name__=='__main__':
     main()
+
