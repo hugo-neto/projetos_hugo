@@ -53,14 +53,14 @@ def wegstein(a, b, condicao=True):
     # problemas na função grafico na hora de saber as raízes para o intervalo fornecido
         if condicao==True:
             print("Raiz encontrada!")
-            print(f"Para o intervalo [{ai}, {bi}] com {k} interações termos:")
+            print(f"Para [a, b] = [{ai}, {bi}] com {k} interações termos:")
             print(f"| x0 = {x0} | f(x0) = {f(x0)} |")
             return x0
         else:
             return x0
     else:
         # Caso a função diverja...
-        print("Não fora possível identificar as raízes para o intervalo indicado.")
+        print(f"Não fora possível identificar as raízes para [a, b] = [{ai}, {bi}].")
         return None
 
 def grafico(condicao=False):
@@ -97,8 +97,8 @@ def grafico(condicao=False):
         plt.show()  
     else:
         # foi solicitado que indique os pontos das raízes e DRE3/1000. Essa função faz isso
-        plt.plot([wegstein(-0.09,-0.1,False), wegstein(0.05, 0.15, False), wegstein(0.3, 0.5, False)], [0, 0, 0],'o')
-        plt.plot([0.251],[f(0.251)],'o')
+        plt.plot([wegstein(-0.09,-0.1,False), wegstein(0.05, 0.15, False), wegstein(0.3, 0.5, False)], [0, 0, 0],'o', label='Raízes de f(x)')
+        plt.plot([0.251],[f(0.251)],'o', label='DRE3/1000')
         ax.legend()
         plt.show()
 
