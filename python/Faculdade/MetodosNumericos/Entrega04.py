@@ -18,13 +18,13 @@ def printa(a, N):
     for i in range(0, N):
         print("")
         for j in range(0, N):
-            print(a[i][j], end=" ")
-
+            print('%+4.4f' % a[i][j], end=" ")
+    print("")
 
 def Doolittle(a, N):
     for k in range(0, N-1):
-        for i in range(k+1, N+1):
-            for j in range(k+1, N+1):
+        for i in range(k+1, N):
+            for j in range(k+1, N):
                 a[i][k] = a[i][k]/a[k][k]
                 a[i][j] = a[i][j] - a[i][k]*a[k][j]
     return a
