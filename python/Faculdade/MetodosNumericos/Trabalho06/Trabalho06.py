@@ -1,5 +1,5 @@
 
-import numpy as np
+from mpl_toolkits.axes_grid1 import host_subplot
 import matplotlib.pyplot as plt
 
 # Vetores para armazenar valores que serão plotados no gráfico
@@ -16,42 +16,48 @@ def f2(x1, x2, F):
     return total
 
 
-def plota_grafico(x_v, h_v, texto="xi"):
-    #[a,b (intervalo a,b) ,nº de subdivisões]
-    fig, ax = plt.subplots()
+def plota_grafico(x1_v, x2_v, h_v):
+    host = host_subplot(111)
 
-    line1, = ax.plot(h_v, x_v, label=f'Variação da C de {texto} em função do tempo')
-    #line1.set_dashes([2, 6, 2, 6])  # 2pt line, 2pt break, 10pt line, 2pt break
+    par = host.twinx()
 
-    # Using plot(..., dashes=...) to set the dashing when creating a line
-    #line2, = ax.plot(h_v, x2_v , dashes=[4, 6], label='Variação da C do Substrato em função do tempo')
+    host.set_xlabel("Tempo (h)")
+    host.set_ylabel("Concentração Células [Kg/m³]")
+    par.set_ylabel("Concentração Substrato [Kg/m³]")
 
-    #Linha referente à legenda no canto do gráfico
-    ax.legend()
-    #Mostrar/Plotar o gráfico
+    p1, = host.plot(h_v, x1_v, label="Concentração Células")
+    p2, = par.plot(h_v, x2_v, label="Concentração Substrato")
+
+    leg = plt.legend()
+
+    host.yaxis.get_label().set_color(p1.get_color())
+    leg.texts[0].set_color(p1.get_color())
+    par.yaxis.get_label().set_color(p2.get_color())
+    leg.texts[1].set_color(p2.get_color())
+
     plt.show()
 
 
 def main():
-    
     condicao = True
     while condicao == True:
-        print("Caso deseje parar o loop, digite '0'")
+        print("\nCaso deseje parar o loop, digite '0'")
         F = float(input("Digite a vazão F em [m³/h]: "))
+        print("")
         if F == 0:
             break
+        
         h = 0.1
-        # ua = u antes
         # u = u do presente momento
         ua1, ua2 = 1.65, 0.2
 
         h_v.append(0.0), x1_v.append(ua1), x2_v.append(ua2)
 
-        k = 0
-
         while h <= 30.1:
-            # gij; i = índice g; j = Céluas (1) ou Substrato (2)
+            # hp = passo
             hp = 0.1
+
+            # gij; i = índice g; j = Céluas (1) ou Substrato (2)
             g11 = hp*f1(ua1, ua2, F)
 
             aux = 0.5*g11 + ua1
@@ -62,6 +68,7 @@ def main():
 
             aux = ua1 + g31      
             g41 = hp*f1(aux, ua2, F)
+            # ua = u antes
             u1 = ua1 + (1/6)*(g11 + 2*g21 + 2*g31 + g41)
 
         # ---------------------------------------------------------------------- #
@@ -82,17 +89,10 @@ def main():
             x2_v.append(u2)
             h_v.append(h)
 
-            k = k + 1
-            print(f"Entrou com x1: {ua1}")
-            print(f"Entrou com x2: {ua2}")
-            print(f"Interação número {k}")
-
             h = h + 0.1
-            ua1 = u1
-            ua2 = u2
+            ua1, ua2 = u1, u2
 
-        plota_grafico(x1_v, h_v, "Células")
-        plota_grafico(x2_v, h_v, "Substrato")
+        plota_grafico(x1_v, x2_v, h_v)
 
 
 if __name__=='__main__':
