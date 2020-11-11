@@ -2,6 +2,10 @@
 from mpl_toolkits.axes_grid1 import host_subplot
 import matplotlib.pyplot as plt
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 # Vetores para armazenar valores que serão plotados no gráfico
 x1_v, x2_v, h_v = [], [], []
 
@@ -35,6 +39,21 @@ def plota_grafico(x1_v, x2_v, h_v):
     par.yaxis.get_label().set_color(p2.get_color())
     leg.texts[1].set_color(p2.get_color())
 
+    plt.show()
+
+
+def plota_grafico_unico(xi_v, h_v, texto="Concentração da espécie", condicao=True):
+    fig, ax = plt.subplots()
+
+    # Using plot(..., dashes=...) to set the dashing when creating a line
+    if condicao == True:
+        line2, = ax.plot(h_v, xi_v,'-r', label=texto)
+    else:
+        line2, = ax.plot(h_v, xi_v, label=texto)
+    
+    #Linha referente à legenda no canto do gráfico
+    ax.legend()
+    #Mostrar/Plotar o gráfico
     plt.show()
 
 
@@ -93,6 +112,8 @@ def main():
             ua1, ua2 = u1, u2
 
         plota_grafico(x1_v, x2_v, h_v)
+        plota_grafico_unico(x1_v, h_v, "Concentração Células")
+        plota_grafico_unico(x2_v, h_v, "Concentração Subtrato", False)
 
 
 if __name__=='__main__':
