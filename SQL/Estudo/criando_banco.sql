@@ -21,5 +21,7 @@ CREATE TABLE CLIENTE (
 /*Mostra todas tabelas*/
 SHOW TABLES;
 
-/*Mostra a descrição/campos da tabelas*/
+/*Mostra a descrição/campos da tabelas
+DESC = Describe
+*/
 DESC CLIENTE;
