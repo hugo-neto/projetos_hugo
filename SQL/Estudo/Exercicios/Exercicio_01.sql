@@ -66,3 +66,6 @@ WHERE NUMERO_PAGINAS <= 465;
 /*Exitem as colunas selecionadas na formatação desejada de somente Feminino*/
 SELECT NOME_DO_LIVRO as 'Nome do livro', VALOR_LIVRO as 'Valor do Livro' FROM LIVROS
 WHERE UF = 'SP';
+
+SELECT NOME_DO_LIVRO as 'Nome do livro', VALOR_LIVRO as 'Valor do Livro' FROM LIVROS
+WHERE SEXO = 'Masculino' AND (UF = 'SP' OR UF = 'RJ');
