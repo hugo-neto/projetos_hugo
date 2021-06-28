@@ -3,26 +3,21 @@
 # CHAMAR: ordena_lista(x, y, 0, len(x)-1, i)
 
 
-def ordena_lista(x, y, inicio, fim, i):
+def ordena_lista(x, y, inicio, fim):
     direita = fim
     esquerda = inicio
     meio = int((direita + esquerda)/2)
-    pivo = float(x[meio])
+    pivo = x[meio]
     
     while direita > esquerda:
         
-        A = float(x[esquerda])
-        while A < pivo:
+        while x[esquerda] < pivo:
             esquerda = esquerda + 1
-            A = float(x[esquerda])
         
-        A_ = float(x[direita])
-        while A_ > pivo:
+        while x[direita] > pivo:
             direita = direita - 1
-            A_ = float(x[direita])
         
         if esquerda <= direita:
-            i = i + 1
             aux1 = x[esquerda]
             aux2 = y[esquerda]
             x[esquerda] = x[direita]
@@ -33,9 +28,9 @@ def ordena_lista(x, y, inicio, fim, i):
             direita = direita - 1
 
         if inicio < direita:
-            ordena_lista(x, y, inicio, direita, i)
+            ordena_lista(x, y, inicio, direita)
         elif esquerda < fim:
-            ordena_lista(x, y, esquerda, fim, i)
+            ordena_lista(x, y, esquerda, fim)
         else:
             pass
 
