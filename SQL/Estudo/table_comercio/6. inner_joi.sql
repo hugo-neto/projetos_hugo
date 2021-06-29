@@ -1,3 +1,6 @@
+/*Função IFNULL() escolhe item null no campo C.EMAIL e 
+retorna ********** se for nulo*/
+
 SELECT C.NOME,
         IFNULL(C.EMAIL, '************') AS 'E-MAIL',
         E.ESTADO,
