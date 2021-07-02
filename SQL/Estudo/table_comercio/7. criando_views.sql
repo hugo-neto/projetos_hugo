@@ -14,3 +14,6 @@ INNER JOIN TELEFONE T
 ON C.IDCLIENTE = T.ID_CLIENTE 
 INNER JOIN ENDERECO E 
 ON C.IDCLIENTE = E.ID_CLIENTE;
+
+/*A VIEW atua como uma tabela virtual e por isso, para acessá-la, utilize
+o comando SELECT (...) FROM nome_view*/
