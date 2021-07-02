@@ -1,0 +1,16 @@
+/*Criando uma trigger -> uma ação tomanda quando ocorre
+alguns comandos no Banco de dados*/
+
+DELIMITER $
+
+CREATE TRIGGER BACKUP_USER
+BEFORE DELETE ON USUARIO
+FOR EACH ROW 
+BEGIN
+		
+	INSERT INTO BKP_USUARIO VALUES
+	(NULL,OLD.IDUSUARIO,OLD.NOME,OLD.LOGIN);
+END
+$
+
+DELIMITER ;
