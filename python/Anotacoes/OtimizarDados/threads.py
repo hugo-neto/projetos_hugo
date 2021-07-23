@@ -11,6 +11,7 @@ def do_something(var):
 
 a = time()
 
+# Reliza processos de ações ao mesmo tempo
 with concurrent.futures.ThreadPoolExecutor() as executor:
     secs = [7, 6, 5, 4, 3, 2, 1]
     results = executor.map(do_something, secs)
