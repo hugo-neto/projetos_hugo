@@ -9,7 +9,11 @@ def funcao():
 
 # Multiprocess
 with concurrent.futures.ProcessPoolExecutor() as executor:
-    executor.map(process_image, img_names)
+    results = executor.map(process_image, img_names)
+ 
+
+for result in results:
+    retult
 
 b = time()
 
