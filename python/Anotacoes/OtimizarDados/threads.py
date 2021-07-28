@@ -16,6 +16,13 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     secs = [7, 6, 5, 4, 3, 2, 1]
     results = executor.map(do_something, secs)
 
+with concurrent.futures.ThreadPoolExecutor(max_workers=2*os.cpu_count()) as executor:
+    results = [executor.submit(funcao, i, a, b, c, ...) for i, tupla in enumerate(lista)]
+    
+dfResultado_ = pd.DataFrame({})
+for f in as_completed(results):
+    dfResultado_ = pd.concat([dfResultado, f.result()], ignore_index=True)   
+ 
  for result in results:
     print(results)
     
