@@ -59,6 +59,7 @@ def corta_df(df, indice):
     arquivo = open("resultado_HugoNeto.txt", 'w')
     arquivo.writelines(conteudo)
     arquivo.close()
+    # Finalizou abertura e leitura dos arquivos de texto
 
     for item in vetor_f:
         print(f"Entrou no for {len(item)}")
@@ -70,12 +71,10 @@ def corta_df(df, indice):
 
 # Avalia a decisão do corte
 def avalia_decisao(df, vetor):
-    coluna_vazao = "Vazão"
-    coluna_volatilidade = "Vol. Rel. Adj."
-    
-    df = df.reset_index()
-    #df = df.reindex([i for i in range(0, len(df))])
-    print(df)
+    coluna_vazao, coluna_volatilidade = "Vazão", "Vol. Rel. Adj."
+
+    # Reseta o index para começar do zero    
+    df.reset_index(inplace=True, drop=True)
 
     aux = []
     aux.append(min(vetor[1], vetor[2]))
@@ -134,17 +133,7 @@ def avalia_decisao(df, vetor):
 def inicia_cortes(df):
     # vetor_final = calcula_dispersao(df)
     calcula_dispersao(df)
-
-    var = """
-    arquivo = open("resultado_HugoNeto.txt", "w")
-    texto = '['
-    texto = texto + ''.join(str(componente) for componente in vetor_final[0].iloc[:,0])
-    texto = texto + '/' + ''.join(str(componente) for componente in vetor_final[1].iloc[:,0])
-    texto = texto + ']\n'
-    arquivo.write(texto)
-    arquivo.close()
-    print("Fechou")"""
-    
+  
 
 def main():
     # 1. Le excel
