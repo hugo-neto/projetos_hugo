@@ -39,24 +39,44 @@ def busca_volatilidade(df, coluna, indice):
 
 # Corta o df de acordo com o interesse
 def corta_df(df, indice):
+    print("Entrou corta df")
     # Corta até o índice
     vetor_f = []
     df1 = df.iloc[0:(indice)+1, :]
-    df2 = df.iloc[indice:, :]
+    df2 = df.iloc[indice+1:, :]
     vetor_f.append(df1)
     vetor_f.append(df2)
-    return vetor_f
+    # print(f"Vetor f: {vetor_f[0]}\n{vetor_f[1]}")
+    
+    # Abre, lê, e completa arquivo.txt
+    arquivo = open('resultado_HugoNeto.txt', 'r')
+    conteudo = arquivo.readlines()
+    texto = '\t['
+    texto = texto + ''.join(str(componente) for componente in vetor_f[0].iloc[:,0])
+    texto = texto + '/' + ''.join(str(componente) for componente in vetor_f[1].iloc[:,0])
+    texto = texto + ']\n'
+    conteudo.append(texto)
+    arquivo = open("resultado_HugoNeto.txt", 'w')
+    arquivo.writelines(conteudo)
+    arquivo.close()
 
-
-def abre_txt(nome="resultado_HugoNeto.txt"):
-    return open(nome, "w")
-
+    for item in vetor_f:
+        print(f"Entrou no for {len(item)}")
+        if len(item) > 2:
+            print("Entrou if")
+            inicia_cortes(item)
+        else:
+            return
 
 # Avalia a decisão do corte
 def avalia_decisao(df, vetor):
     coluna_vazao = "Vazão"
     coluna_volatilidade = "Vol. Rel. Adj."
     
+    df = df.reset_index()
+    #df = df.reindex([i for i in range(0, len(df))])
+    print(df)
+
     aux = []
     aux.append(min(vetor[1], vetor[2]))
     aux.append(min(vetor[0], vetor[2]))
@@ -68,15 +88,19 @@ def avalia_decisao(df, vetor):
     # Regra V1a
     if indice == 0:
         linha = list(df.index[df[coluna_vazao] == df[coluna_vazao].max()])[0]
+        print(linha)
+        print(df)
 
         if linha == 0:
             return corta_df(df, linha)
         
         if busca_volatilidade(df, coluna_volatilidade, linha) > busca_volatilidade(df, coluna_volatilidade, linha-1):
                 # corte realizado no meio e resto
+            print("Entrou aqui if indice 0")
             return corta_df(df, linha)
         else:
         # corte realizado meio-1
+            print("Entrou no else")
             return corta_df(df, linha-1)
 
     # Regra V1b
@@ -108,23 +132,20 @@ def avalia_decisao(df, vetor):
 
 
 def inicia_cortes(df):
-    vetor_final = calcula_dispersao(df)
-    
-    arquivo = abre_txt()
+    # vetor_final = calcula_dispersao(df)
+    calcula_dispersao(df)
+
+    var = """
+    arquivo = open("resultado_HugoNeto.txt", "w")
     texto = '['
     texto = texto + ''.join(str(componente) for componente in vetor_final[0].iloc[:,0])
     texto = texto + '/' + ''.join(str(componente) for componente in vetor_final[1].iloc[:,0])
-    texto = texto + ']'
+    texto = texto + ']\n'
     arquivo.write(texto)
+    arquivo.close()
+    print("Fechou")"""
+    
 
-    # Ver questão de dois cortes por etapa!
-    for item in vetor_final:
-        if type(item) == list and len(item) > 2:
-            vetor = inicia_cortes(item)
-    pass
-
-
-# A função main já cria o txt na pasta
 def main():
     # 1. Le excel
     # python3 opicional1.py
@@ -134,21 +155,22 @@ def main():
     # Cria txt
     resultado = open("resultado_HugoNeto.txt", "a")
     # Abre ele com permissões de escrita
-    resultado = abre_txt()
+    resultado = open("resultado_HugoNeto.txt", "w")
     # Declara string que disserta sobre o problema
     texto = """
     Método heurístico, assistido por lógica nebulosa
     Objetivo: sínteses de um sistema de separação
     Apenas colunas de destilação
-    """
+"""
     # escreve no arquivo
     resultado.write(texto)
     # Após escrever, fecha
     resultado.close()
 
     inicia_cortes(df)
-    
+    print("Programa executado com sucesso")
 
 
 if __name__ == '__main__':
+    print("Iniciando programa")
     main()
