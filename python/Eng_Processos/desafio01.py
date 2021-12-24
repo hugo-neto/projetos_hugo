@@ -3,6 +3,8 @@
 
 import pandas as pd
 import os, sys
+global cortesDf
+cortesDf = []
 
 
 # Coleta nome e extensão do excel
@@ -37,23 +39,44 @@ def busca_volatilidade(df, coluna, indice):
     return df[coluna][indice]
 
 
+def limpa_vetor(df):
+    try:
+        if df in cortesDf:
+            cortesDf.remove(df)
+    except:
+        i = 0
+        print(f"limpa_vetor\n{df}")
+        for item in cortesDf:
+            if item.equals(df) == True:
+                del cortesDf[i]
+            i = i + 1
+
+
 # Corta o df de acordo com o interesse
 def corta_df(df, indice):
     print("Entrou corta df")
+    
     # Corta até o índice
     vetor_f = []
-    df1 = df.iloc[0:(indice)+1, :]
-    df2 = df.iloc[indice+1:, :]
-    vetor_f.append(df1)
-    vetor_f.append(df2)
-    # print(f"Vetor f: {vetor_f[0]}\n{vetor_f[1]}")
-    
+    #if len(df) == 2:
+
     # Abre, lê, e completa arquivo.txt
     arquivo = open('resultado_HugoNeto.txt', 'r')
     conteudo = arquivo.readlines()
     texto = '\t['
-    texto = texto + ''.join(str(componente) for componente in vetor_f[0].iloc[:,0])
-    texto = texto + '/' + ''.join(str(componente) for componente in vetor_f[1].iloc[:,0])
+
+    try:
+        df1 = df.iloc[0:(indice)+1, :]
+        df2 = df.iloc[indice+1:, :]
+        texto = texto + ''.join(str(componente) for componente in df1.iloc[:,0])
+        texto = texto + '/' + ''.join(str(componente) for componente in df2.iloc[:,0])
+    
+    except TypeError:
+        df1 = metade(df, 0)
+        df2 = metade(df, 1)
+        texto = texto + df1['Comp.']
+        texto = texto + '/' + df2['Comp.']
+    
     texto = texto + ']\n'
     conteudo.append(texto)
     arquivo = open("resultado_HugoNeto.txt", 'w')
@@ -61,13 +84,19 @@ def corta_df(df, indice):
     arquivo.close()
     # Finalizou abertura e leitura dos arquivos de texto
 
-    for item in vetor_f:
-        print(f"Entrou no for {len(item)}")
-        if len(item) > 2:
-            print("Entrou if")
-            inicia_cortes(item)
-        else:
-            return
+    # Faz a reindexação se a variável for do tipo dataframe
+    # Quando chega em 2 componentes, ele acaba gerando uma Series ao invés de DataFrame
+    if isinstance(df1, pd.DataFrame) and isinstance(df2, pd.DataFrame):
+        if df1.index.start != 0:
+            df1.reset_index(inplace=True, drop=True)
+        if df2.index.start != 0:
+            df2.reset_index(inplace=True, drop=True)
+
+    cortesDf.append(df1)
+    cortesDf.append(df2)
+
+    limpa_vetor(df)
+
 
 # Avalia a decisão do corte
 def avalia_decisao(df, vetor):
@@ -87,12 +116,14 @@ def avalia_decisao(df, vetor):
     # Regra V1a
     if indice == 0:
         linha = list(df.index[df[coluna_vazao] == df[coluna_vazao].max()])[0]
-        print(linha)
-        print(df)
+        print(f"V1a linha: {linha}, {len(df)}")
 
         if linha == 0:
             return corta_df(df, linha)
         
+        if linha+1 == len(df) and linha > 1:
+            linha = linha-1
+
         if busca_volatilidade(df, coluna_volatilidade, linha) > busca_volatilidade(df, coluna_volatilidade, linha-1):
                 # corte realizado no meio e resto
             print("Entrou aqui if indice 0")
@@ -131,15 +162,20 @@ def avalia_decisao(df, vetor):
 
 
 def inicia_cortes(df):
-    # vetor_final = calcula_dispersao(df)
     calcula_dispersao(df)
   
+
+def metade(df, indice):
+    limpa_vetor(df)
+    df1 = df.iloc[indice, :]
+    return df1
+
 
 def main():
     # 1. Le excel
     # python3 opicional1.py
     df = coleta_excel()
-
+    cortesDf.append(df)
     # 2. Trata dados
     # Cria txt
     resultado = open("resultado_HugoNeto.txt", "a")
@@ -155,8 +191,13 @@ def main():
     resultado.write(texto)
     # Após escrever, fecha
     resultado.close()
-
-    inicia_cortes(df)
+    contador = len(df)
+    
+    while len(cortesDf) < contador:
+        for item in cortesDf:
+            if len(item) > 1 and isinstance(item, pd.DataFrame):
+                inicia_cortes(item)
+    print(f"\nENTROU FIM{cortesDf}\n")
     print("Programa executado com sucesso")
 
 
