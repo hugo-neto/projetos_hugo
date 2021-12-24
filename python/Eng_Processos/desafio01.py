@@ -111,12 +111,11 @@ def avalia_decisao(df, vetor):
     # Regra V1a
     if indice == 0:
         linha = list(df.index[df[coluna_vazao] == df[coluna_vazao].max()])[0]
+        if len(df) == 4:
+            print(linha)
 
         if linha == 0:
             return corta_df(df, linha)
-        
-        if linha+1 == len(df) and linha > 1:
-            linha = linha-1
 
         if busca_volatilidade(df, coluna_volatilidade, linha) > busca_volatilidade(df, coluna_volatilidade, linha-1):
                 # corte realizado no meio e resto
@@ -195,3 +194,4 @@ def main():
 if __name__ == '__main__':
     print("Iniciando programa")
     main()
+
