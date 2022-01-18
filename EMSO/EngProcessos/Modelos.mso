@@ -1,0 +1,485 @@
+# Especie de importacao de bibliotecas padroes do EMSO
+# Para mais informacoes eml --> types.mso
+using "types";
+ 
+Model corrente
+	# Parametros sao valores fixos. Que nao muda
+	# Aqui, ha somente a declaracao dos mesmos
+	PARAMETERS
+	AcBenz as Integer;
+	Benz as Integer;
+	Agua as Integer;
+	# Perceber que Cp(3), rho(3), lambda (3)
+	# Isso indica que sao vetores de 3 dimensoes
+	# n = 3 | dimensao do vetor
+	# Unit ==> variavel do parametro
+	Cp(3) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	rho(3) as positive (Brief="Densidades", Unit='kg/l');
+	lambda(3) as positive (Brief="Calores latente", Unit='kcal/kg');
+	
+	# SET --> Onde vai colocar o nome numerico do parametro
+	# Reparar que 1, 2, 3 sao referentes a ordem nos vetores
+	# Exemplo, Cp = 0,44, rho = 1.272 refere-se ao AcBenz = 1
+	SET
+	AcBenz = 1;
+	Benz = 2;
+	Agua = 3;
+	Cp = [0.44, 0.45, 1]*'kcal/(kg*K)';
+	rho = [1.272, 0.8834, 1]*'kg/l';
+	lambda = [0, 94.14, 505]*'kcal/kg';
+	
+	# Variaveis que podem mudar durante a analise
+	VARIABLES
+	W as positive (Brief="Vazao massica total da corrente", Unit='kg/h');
+	x(3) as fraction (Brief="Vetor de fracao massica de cada componente");
+	T as positive (Brief="Temperatura da corrente", Unit='K');
+	f(3) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
+	som_comp as positive (Brief="Soma das composicoes");
+	
+	EQUATIONS
+	# Por mais que tenha sido declarado uma variavel, os vetores x e f possuem 3 dimensoes
+	# Assim sendo, aqui, ha 3 equacoes
+	"Vazao massica de cada componente"
+	f = x*W ;
+	
+	"Soma das composicoes"
+	som_comp = sum(x);
+	
+end
+
+Model fonte
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/fonte";
+		
+	VARIABLES
+	out outlet as corrente (Brief="Corrente de saida", PosX=1, PosY=0.5);
+	
+end
+
+Model fonte2
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/fonte2";
+		
+	VARIABLES
+	out outlet as corrente (Brief="Corrente de saida", PosX=0, PosY=0.5);
+	
+end
+
+Model sumidero
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/sumidero";
+		
+	VARIABLES
+	in inlet as corrente (Brief="Corrente de entrada", PosX=0, PosY=0.5);
+	
+end
+
+Model sumidero2
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/sumidero2";
+		
+	VARIABLES
+	in inlet as corrente (Brief="Corrente de entrada", PosX=1, PosY=0.5);
+	
+end
+
+Model extrator
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/extrator";
+	
+	# in --> Corrente de entrada
+	# out --> Corrente de saida
+	VARIABLES
+	in feed as corrente (Brief="Corente de entrada da alimentacao", PosX=0, PosY=0.5);
+	in benzeno as corrente (Brief="Corente de entrada do benzeno", PosX=0.5, PosY=0);
+	out rafinado as corrente (Brief="Corente de saida do refinado", PosX=0.5, PosY=1);
+	out extrato as corrente (Brief="Corente de saida do extrato", PosX=1, PosY=0.5);
+	T as positive (Brief="Temperatura do equipamento", Unit='K');
+	t as positive (Brief="Tempo de residencia", Unit='h');
+	k as positive (Brief="Constante de equilibrio L-L");
+	r as positive (Brief="Fracao repuperada de AcBenz");
+	V as positive (Brief="Volume do equipamento", Unit='l');
+	
+	EQUATIONS
+	
+	"Balance de massa por componentes"
+	feed.f + benzeno.f = rafinado.f + extrato.f;
+	
+	# Aqui, a soma das composicoes das correntes de SAIDA precisa ser igual a 01
+	"Soma das composicoes"
+	sum(rafinado.x) = 1;
+	sum(extrato.x) = 1;
+	
+	"Nao ha benzeno no refinado" 
+	rafinado.x(rafinado.Benz) = 0;
+	
+	"Nao ha agua no extrato" 
+	extrato.x(extrato.Agua) = 0;
+	
+	"Equilibrio liquido-liquido"
+	k*rafinado.x(extrato.AcBenz) = extrato.x(extrato.AcBenz);
+	
+	"Ajuste do equilibrio com a temperatura"
+	k = (3 + 0.04*T*'1/K');
+	
+	"Balanco de energia"
+	sum(feed.f*feed.Cp)*feed.T + sum(benzeno.f*benzeno.Cp)*benzeno.T = sum(rafinado.f*rafinado.Cp)*rafinado.T + sum(extrato.f*extrato.Cp)*extrato.T;
+	
+	"Volume do equipamento"
+	V = sum(feed.f/feed.rho + benzeno.f/benzeno.rho)*t;
+	
+	"Fracao recuperada de AcBenz"
+	r = extrato.f(extrato.AcBenz)/feed.f(feed.AcBenz);
+	
+	"Equilibrio termico"
+	rafinado.T = T;
+	extrato.T = T;
+end
+
+FlowSheet teste_extrator
+	
+	DEVICES
+	Feed as fonte;
+	Benzeno as fonte;
+	Extrator as extrator;
+	
+	CONNECTIONS
+	Feed.outlet to Extrator.feed;
+	Benzeno.outlet to Extrator.benzeno;
+		
+	SPECIFY
+	
+	Feed.outlet.T = 25*'K';
+	Feed.outlet.W = 100000*'kg/h';
+	Feed.outlet.x = [0.002, 0, 1-0.002];
+	
+	Benzeno.outlet.T = 25*'K';
+	Benzeno.outlet.x = [0, 1, 0];
+	
+	Extrator.t = 5/60*'h';
+	Extrator.r = 0.6;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Model evaporador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/evaporador";
+	
+	PARAMETERS
+	Ue as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ue = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in feed as corrente (Brief="Corrente de entrada da alimentacao", PosX=0, PosY=0.53);
+	out benzeno as corrente (Brief="Corente de saida do benzeno", PosX=0.65, PosY=0);
+	out produto as corrente (Brief="Corente de saida do produto", PosX=1, PosY=0.96);
+	in vapor as corrente (Brief="Corente de entrada do vapor", PosX=1, PosY=0.65);
+	out condensado as corrente (Brief="Corente de saida do condensado", PosX=0, PosY=0.88);
+	Q as positive (Brief="Calor fornecido ao evaporador", Unit='kcal/h');
+	T as positive (Brief="Temperatura do equipamento", Unit='K');
+	Ae as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente vapor"
+	vapor.f = condensado.f;
+	
+	"Soma das composicoes"
+	sum(condensado.x) = 1;
+	
+	"Balanco de energia do vapor"
+	Q = vapor.W*vapor.lambda(vapor.Agua);
+	
+	"Balanco de massa por componentes corrente principal"
+	feed.f = benzeno.f + produto.f;
+	
+	"Soma das composicoes"
+	sum(benzeno.x) = 1;
+	sum(produto.x) = 1;
+	
+	"Nao ha AcBenz nem agua no benzeno" 
+	benzeno.x(benzeno.AcBenz) = 0;
+	benzeno.x(benzeno.Agua) = 0;
+	
+	"Balanco de corrente principal"
+	Q = sum(feed.f*feed.Cp)*(T-feed.T) + benzeno.W*benzeno.lambda(benzeno.Benz); 
+	
+	"Area"
+	Q = Ue*Ae*(vapor.T-benzeno.T);
+	
+	"Equilibrio termico"
+	benzeno.T = T;
+	produto.T = T;
+	
+	"Vapor so muda de fase"
+	condensado.T = vapor.T; 
+end
+
+FlowSheet teste_evaporador
+	
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+		
+	SPECIFY
+	
+	Feed.outlet.T = 25*'K';
+	Feed.outlet.W = 37545*'kg/h';
+	Feed.outlet.f = [120, 37425, 0]*'kg/h';
+	
+	Vapor.outlet.T = 150*'K';
+	Vapor.outlet.x = [0, 0, 1];
+	
+	Evaporador.T = 80*'K';
+	Evaporador.produto.x(Evaporador.produto.AcBenz) = 0.1;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Model condensador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/trocador";
+	
+	PARAMETERS
+	Uc as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Uc = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in benzeno_in as corrente (Brief="Corrente de entrada do benzeno", PosX=1, PosY=0.5);
+	out benzeno_out as corrente (Brief="Corrente de saida do benzeno", PosX=0, PosY=0.5);
+	in agua_in as corrente (Brief="Corente de entrada da agua", PosX=0.72, PosY=1);
+	out agua_out as corrente (Brief="Corrente de saida da agua", PosX=0.27, PosY=0);
+	Q as positive (Brief="Calor trocado", Unit='kcal/h');
+	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
+	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
+	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K'); 
+	Ac as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente benzeno"
+	benzeno_in.f = benzeno_out.f;
+	
+	"Soma das composicoes"
+	sum(benzeno_out.x) = 1;
+	
+	"Balanco de massa por componentes corrente agua"
+	agua_in.f = agua_out.f;
+	
+	"Soma das composicoes"
+	sum(agua_out.x) = 1;
+		
+	"Balanco de energia da agua"
+	Q = agua_in.W*agua_in.Cp(3)*(agua_out.T-agua_in.T);
+	
+	"Balanco de energia do benzeno"
+	Q = benzeno_in.W*benzeno_in.lambda(2);
+	
+	"Benzeno so muda de fase"
+	benzeno_out.T = benzeno_in.T;
+	
+	"Dif de temperaturas de aproach 1"
+	DT1 = benzeno_in.T-agua_out.T;
+	
+	"Dif de temperaturas de aproach 2"
+	DT2 = benzeno_out.T-agua_in.T;
+		
+	"Dif media logaritmica de temperaturas"
+	DTML = (DT1-DT2)/ln(DT1/DT2);
+	
+	"Area"
+	Q = Uc*Ac*DTML;
+	
+end
+
+FlowSheet teste_condensador
+	
+	DEVICES
+	Benzeno as fonte;
+	Agua as fonte;
+	Codensador as condensador;
+	
+	CONNECTIONS
+	Benzeno.outlet to Codensador.benzeno_in;
+	Agua.outlet to Codensador.agua_in;
+		
+	SPECIFY
+	
+	Benzeno.outlet.T = 80*'K';
+	Benzeno.outlet.W = 36255*'kg/h';
+	Benzeno.outlet.x = [0, 1, 0];
+	
+	Agua.outlet.T = 15*'K';
+	Agua.outlet.x = [0, 0, 1];
+	
+	Codensador.agua_out.T = 30*'K';
+		
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Model resfriador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/trocador";
+	
+	PARAMETERS
+	Ur as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ur = 100*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in benzeno_in as corrente (Brief="Corrente de entrada do benzeno", PosX=1, PosY=0.5);
+	out benzeno_out as corrente (Brief="Corrente de saida do benzeno", PosX=0, PosY=0.5);
+	in agua_in as corrente (Brief="Corente de entrada da agua", PosX=0.72, PosY=1);
+	out agua_out as corrente (Brief="Corrente de saida da agua", PosX=0.27, PosY=0);
+	Q as positive (Brief="Calor trocado", Unit='kcal/h');
+	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
+	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
+	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K'); 
+	Ar as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente benzeno"
+	benzeno_in.f = benzeno_out.f;
+	
+	"Soma das composicoes"
+	sum(benzeno_out.x) = 1;
+	
+	"Balanco de massa por componentes corrente agua"
+	agua_in.f = agua_out.f;
+	
+	"Soma das composicoes"
+	sum(agua_out.x) = 1;
+		
+	"Balanco de energia da agua"
+	Q = agua_in.W*agua_in.Cp(3)*(agua_out.T-agua_in.T);
+	
+	"Balanco de energia do benzeno"
+	Q = benzeno_in.W*benzeno_in.Cp(2)*(benzeno_in.T-benzeno_out.T);
+	
+	"Dif de temperaturas de aproach 1"
+	DT1 = benzeno_in.T-agua_out.T;
+	
+	"Dif de temperaturas de aproach 2"
+	DT2 = benzeno_out.T-agua_in.T;
+		
+	"Dif media logaritmica de temperaturas"
+	DTML = (DT1-DT2)/ln(DT1/DT2);
+	
+	"Area"
+	Q = Ur*Ar*DTML;
+	
+end
+
+FlowSheet teste_resfriador
+	
+	DEVICES
+	Benzeno as fonte;
+	Agua as fonte;
+	Resfriador as resfriador;
+	
+	CONNECTIONS
+	Benzeno.outlet to Resfriador.benzeno_in;
+	Agua.outlet to Resfriador.agua_in;
+		
+	SPECIFY
+	
+	Benzeno.outlet.T = 80*'K';
+	Benzeno.outlet.W = 36255*'kg/h';
+	Benzeno.outlet.x = [0, 1, 0];
+	
+	Agua.outlet.T = 15*'K';
+	Agua.outlet.x = [0, 0, 1];
+	
+	Resfriador.agua_out.T = 30*'K';
+	Resfriador.benzeno_out.T = 25*'K';
+		
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+Model misturador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/misturador";
+	
+	VARIABLES
+	in benzeno_rec as corrente (Brief="Corrente de entrada do benzeno recuperado", PosX=1, PosY=0.1);
+	in benzeno_new as corrente (Brief="Corrente de entrada do benzeno novo", PosX=0, PosY=0.1);
+	out benzeno as corrente (Brief="Corrente de saida do benzeno", PosX=0.5, PosY=1);
+		
+	EQUATIONS
+	
+	"Balanco de massa por componentes"
+	benzeno_rec.f + benzeno_new.f = benzeno.f;
+	
+	"Soma das composicoes"
+	sum(benzeno.x) = 1;
+	
+	"Balanco de energia"
+	sum(benzeno_rec.f*benzeno_rec.Cp)*benzeno_rec.T + sum(benzeno_new.f*benzeno_new.Cp)*benzeno_new.T = sum(benzeno.f*benzeno.Cp)*benzeno.T;
+
+end
+
+
+FlowSheet teste_misturador
+	
+	DEVICES
+	Benzeno_rec as fonte;
+	Benzeno_new as fonte;
+	Misturador as misturador;
+	
+	CONNECTIONS
+	Benzeno_rec.outlet to Misturador.benzeno_rec;
+	Benzeno_new.outlet to Misturador.benzeno_new;
+	
+	SPECIFY
+	
+	Benzeno_rec.outlet.T = 25*'K';
+	Benzeno_rec.outlet.W = 36255*'kg/h';
+	Benzeno_rec.outlet.x = [0, 1, 0];
+	
+	Benzeno_new.outlet.T = 25*'K';
+	Benzeno_new.outlet.W = 1080*'kg/h';
+	Benzeno_new.outlet.x = [0, 1, 0];
+	
+	OPTIONS
+	Dynamic = false;
+
+end
