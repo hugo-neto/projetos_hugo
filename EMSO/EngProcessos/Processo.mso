@@ -1,0 +1,141 @@
+# faz a importacao do arquivo Modelos.mso
+# Similar a um import pacote
+using "Modelos";
+ 
+FlowSheet Dimensionamento
+	
+	DEVICES
+	
+	Feed as fonte;
+	Benzeno_makeup as fonte;
+	Vapor as fonte;
+	Agua_cond as fonte;
+	Agua_resf as fonte;
+	
+	Extrator as extrator;
+	Evaporador as evaporador;
+	Codensador as condensador;
+	Resfriador as resfriador;
+	Misturador as misturador;
+	
+	
+	CONNECTIONS
+	
+	Feed.outlet to Extrator.feed;
+	Misturador.benzeno to Extrator.benzeno;
+		
+	Extrator.extrato to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+	
+	Evaporador.benzeno to Codensador.benzeno_in;
+	Agua_cond.outlet to Codensador.agua_in;
+	
+	Codensador.benzeno_out to Resfriador.benzeno_in;
+	Agua_resf.outlet to Resfriador.agua_in;
+	
+	Resfriador.benzeno_out to Misturador.benzeno_rec;
+	Benzeno_makeup.outlet to Misturador.benzeno_new;
+	
+
+	SPECIFY
+	
+	Feed.outlet.T = 25*'K';
+	Feed.outlet.W = 100000*'kg/h';
+	Feed.outlet.x = [0.002, 0, 1-0.002];
+	
+	Benzeno_makeup.outlet.T = 25*'K';
+	Benzeno_makeup.outlet.x = [0, 1, 0];
+	
+	Vapor.outlet.T = 150*'K';
+	Vapor.outlet.x = [0, 0, 1];
+	
+	Agua_cond.outlet.T = 15*'K';
+	Agua_cond.outlet.x = [0, 0, 1];
+	
+	Agua_resf.outlet.T = 15*'K';
+	Agua_resf.outlet.x = [0, 0, 1];
+		
+	Extrator.t = 5/60*'h';
+	Extrator.r = 0.6;
+	Extrator.T = 25*'K';
+	
+	Evaporador.T = 80*'K';
+	Evaporador.produto.x(1) = 0.1;
+	
+	Codensador.agua_out.T = 30*'K';
+	
+	Resfriador.agua_out.T = 30*'K';
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+FlowSheet Simulacao
+	
+	DEVICES
+	
+	Feed as fonte;
+	Benzeno_makeup as fonte;
+	Vapor as fonte;
+	Agua_cond as fonte;
+	Agua_resf as fonte;
+	
+	Extrator as extrator;
+	Evaporador as evaporador;
+	Codensador as condensador;
+	Resfriador as resfriador;
+	Misturador as misturador;
+	
+	
+	CONNECTIONS
+	
+	Feed.outlet to Extrator.feed;
+	Misturador.benzeno to Extrator.benzeno;
+		
+	Extrator.extrato to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+	
+	Evaporador.benzeno to Codensador.benzeno_in;
+	Agua_cond.outlet to Codensador.agua_in;
+	
+	Codensador.benzeno_out to Resfriador.benzeno_in;
+	Agua_resf.outlet to Resfriador.agua_in;
+	
+	Resfriador.benzeno_out to Misturador.benzeno_rec;
+	Benzeno_makeup.outlet to Misturador.benzeno_new;
+	
+	 
+	SPECIFY
+	
+	Feed.outlet.W = 150000*'kg/h'; #Feed.outlet.W = 100000*'kg/h';
+	Feed.outlet.T = 25*'K';
+	Feed.outlet.x = [0.002, 0, 1-0.002];
+	
+	Benzeno_makeup.outlet.T = 25*'K';
+	Benzeno_makeup.outlet.x = [0, 1, 0];
+	
+	Vapor.outlet.T = 150*'K';
+	Vapor.outlet.x = [0, 0, 1];
+	
+	Agua_cond.outlet.T = 15*'K';
+	Agua_cond.outlet.x = [0, 0, 1];
+	
+	Agua_resf.outlet.T = 15*'K';
+	Agua_resf.outlet.x = [0, 0, 1];
+	
+	Extrator.V = 11852*'l'; #Extrator.t = 5/60*'h';
+	Extrator.r = 0.6;
+	Extrator.T = 25*'K';
+	
+	Evaporador.Ae = 124*'m^2'; #Evaporador.produto.x(Evaporador.AcBenz) = 0.1;
+	Evaporador.T = 80*'K';
+	
+	Codensador.Ac = 119*'m^2'; #Codensador.agua_out.T = 30*'K';
+	
+	Resfriador.Ar = 361*'m^2'; #Resfriador.agua_out.T = 30*'K';
+	
+	OPTIONS
+	Dynamic = false;
+
+end
