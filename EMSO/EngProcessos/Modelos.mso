@@ -3,6 +3,11 @@
 using "types";
  
 Model corrente
+	PARAMETERS
+	tamanho as Integer;
+	SET 
+	tamanho = 3;
+	
 	# Parametros sao valores fixos. Que nao muda
 	# Aqui, ha somente a declaracao dos mesmos
 	PARAMETERS
@@ -13,9 +18,9 @@ Model corrente
 	# Isso indica que sao vetores de 3 dimensoes
 	# n = 3 | dimensao do vetor
 	# Unit ==> variavel do parametro
-	Cp(3) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
-	rho(3) as positive (Brief="Densidades", Unit='kg/l');
-	lambda(3) as positive (Brief="Calores latente", Unit='kcal/kg');
+	Cp(tamanho) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	rho(tamanho) as positive (Brief="Densidades", Unit='kg/l');
+	lambda(tamanho) as positive (Brief="Calores latente", Unit='kcal/kg');
 	
 	# SET --> Onde vai colocar o nome numerico do parametro
 	# Reparar que 1, 2, 3 sao referentes a ordem nos vetores
