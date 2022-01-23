@@ -1,0 +1,158 @@
+# Especie de importacao de bibliotecas padroes do EMSO
+# Para mais informacoes eml --> types.mso
+using "types";
+
+Model corrente
+	PARAMETERS
+	tamanho as Integer;
+	SET 
+	tamanho = 2;
+	
+	# Parametros sao valores fixos. Que nao muda
+	# Aqui, ha somente a declaracao dos mesmos
+	PARAMETERS
+	Soluto as Integer;
+	Agua as Integer;
+	# Perceber que Cp(3), rho(3), lambda (3)
+	# Isso indica que sao vetores de 3 dimensoes
+	# n = 3 | dimensao do vetor
+	# Unit ==> variavel do parametro
+	Cp(tamanho) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	#rho(tamanho) as positive (Brief="Densidades", Unit='kg/l');
+	lambda(tamanho) as positive (Brief="Calores latente", Unit='kcal/kg');
+	
+	# SET --> Onde vai colocar o nome numerico do parametro
+	# Reparar que 1, 2, 3 sao referentes a ordem nos vetores
+	# Exemplo, Cp = 0,44, rho = 1.272 refere-se ao AcBenz = 1
+	SET
+	Soluto = 1;
+	Agua = 2;
+	Cp = [0.5, 1]*'kcal/(kg*K)';
+	#rho = [1.272, 0.8834, 1]*'kg/l';
+	lambda = [94.14, 505]*'kcal/kg';
+	
+	# Variaveis que podem mudar durante a analise
+	VARIABLES
+	W as positive (Brief="Vazao massica total da corrente", Unit='kg/h');
+	x(tamanho) as fraction (Brief="Vetor de fracao massica de cada componente");
+	T as positive (Brief="Temperatura da corrente", Unit='K');
+	f(tamanho) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
+	som_comp as positive (Brief="Soma das composicoes");
+	
+	EQUATIONS
+	# Por mais que tenha sido declarado uma variavel, os vetores x e f possuem 3 dimensoes
+	# Assim sendo, aqui, ha 3 equacoes
+	"Vazao massica de cada componente"
+	f = x*W ;
+	
+	"Soma das composicoes"
+	som_comp = sum(x);
+	
+	"Soma das correntes"
+	W = sum(f);
+	
+end
+
+Model fonte
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/fonte";
+		
+	VARIABLES
+	out outlet as corrente (Brief="Corrente de saida", PosX=1, PosY=0.5);
+	
+end
+
+Model trocador_calor
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/extrator";
+	
+	PARAMETERS
+	Ut as positive (Brief="Coef global de troca termica no trocador de calor", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ut = 100*'kcal/(h*m^2*K)';	
+	
+	# in --> Corrente de entrada
+	# out --> Corrente de saida
+	VARIABLES
+	in feed as corrente (Brief="Corente de entrada da alimentacao");
+	out resfriada as corrente (Brief="Corente de saida resfriada");
+	in reciclo as corrente (Brief="Corente de reciclo");
+	out aquecida as corrente (Brief="Corente de saida aquecida");
+	Q as positive (Brief="Calor trocado entre as correntes", Unit='kcal/h');	
+	At as positive (Brief="Area util de troca terminca", Unit='m^2');
+	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
+	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
+	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K');
+	
+	EQUATIONS
+	
+	"Balance de massa por componente corrente fria"
+	feed.f = aquecida.f;
+
+	"Balance de massa por componente corrente quente"
+	reciclo.f = resfriada.f;
+	
+	#"Soma das composicoes aquecidas"
+	#sum(aquecida.x) = 1;
+	
+	#"Soma das composicoes resfriadas"
+	#sum(resfriada.x) = 1;
+	
+	"Balanco de Energia corrente fria"
+	Q = (feed.Cp(1)*feed.f(1) + feed.f(2)*aquecida.Cp(2))*(aquecida.T-feed.T);
+	
+	"Balanco de Energia corrente quente"
+	Q = (reciclo.Cp(1)*reciclo.f(1) + reciclo.f(2)*reciclo.Cp(2))*(reciclo.T-resfriada.T);
+	
+	"Delta T de approach 1"
+	DT1 = reciclo.T - aquecida.T;
+	
+	"Delta T de approach 1"
+	DT2 = resfriada.T - feed.T;
+	
+	"Dif media logaritmica de temperaturas"
+	DTML = (DT1-DT2)/ln(DT1/DT2);
+	
+	"Dimensionamento"
+	Q = Ut*At*DTML;
+	
+	#"Vazões de produto"	
+	#feed.W = aquecida.W;
+	
+	#"Vazões de refrigerante"
+	#reciclo.W = resfriada.W;
+	
+end
+
+FlowSheet teste_trocador_calor
+	
+	DEVICES
+	Feed as fonte;
+	Reciclo as fonte;
+	Trocador_calor as trocador_calor;
+	
+	CONNECTIONS
+	Feed.outlet to Trocador_calor.feed;
+	Reciclo.outlet to Trocador_calor.reciclo;
+	
+	SPECIFY
+	
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.T = 30*'K';
+	Feed.outlet.x = [0.2, 0.8];
+	
+	#Reciclo.outlet.T = 100*'K';
+	
+	Trocador_calor.resfriada.T = 45*'K';
+	Trocador_calor.resfriada.x(1) = 0.4;
+	Trocador_calor.resfriada.x(2) = 0.6;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
