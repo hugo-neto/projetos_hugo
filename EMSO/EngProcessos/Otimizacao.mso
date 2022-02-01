@@ -1,0 +1,86 @@
+using "types";
+
+FlowSheet Extrator
+	
+	PARAMETERS
+	k as positive;
+	pAB as positive (Unit = 'US$/kg');
+	pB as positive (Unit = 'US$/kg');
+	
+	SET
+	k = 4;
+	pAB = 0.4*'US$/kg';
+	pB = 0.01*'US$/kg';
+	
+	
+	VARIABLES
+	
+	Q as positive (Unit = 'kg/h');
+	x0 as fraction;
+	x as fraction;
+	y as fraction;
+	W as positive (Unit = 'kg/h');
+	
+	R as positive (Unit = 'US$/h');
+	C as positive (Unit = 'US$/h');
+	L as Real (Unit = 'US$/h');
+	
+	EQUATIONS
+	
+	Q*(x0-x) = W*y;
+	y = k*x;
+		
+	R = pAB*W*y;
+	C = pB*W;
+	L = R - C;
+	
+	SPECIFY
+	Q = 10000*'kg/h';
+	x0 = 0.02;
+	x = 0.01;
+	#y = 0.03;
+	#W = 2500*'kg/h';
+	
+	
+	OPTIONS
+	Dynamic = false;
+	
+end
+
+CaseStudy CS as Extrator
+	
+	VARY
+	x = [0.001:0.0005:0.02];
+	
+	
+	RESPONSE
+	R;
+	C;
+	L;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Optimization Opt as Extrator 
+	
+	MAXIMIZE
+	L;
+	
+	FREE
+	x;
+	#y;
+	#W;
+	
+	EQUATIONS
+	x<=0.02;
+	
+	OPTIONS
+	Dynamic = false;
+	NLPSolveNLA = false;
+	NLPSolver(File = "ipopt_emso",
+			  MaxIterations = 1000,
+			  RelativeAccuracy = 1e-8);
+end
+
