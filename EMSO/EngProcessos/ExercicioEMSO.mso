@@ -3,10 +3,10 @@
 using "types";
 
 Model corrente
-	# PARAMETERS
-	# tamanho as Integer;
-	# SET 
-	# tamanho = 2;
+	PARAMETERS
+	tamanho as Integer;
+	SET 
+	tamanho = 2;
 	
 	# Parametros sao valores fixos. Que nao muda
 	# Aqui, ha somente a declaracao dos mesmos
@@ -17,9 +17,9 @@ Model corrente
 	# Isso indica que sao vetores de 3 dimensoes
 	# n = 3 | dimensao do vetor
 	# Unit ==> variavel do parametro
-	Cp(2) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	Cp(tamanho) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
 	#rho(tamanho) as positive (Brief="Densidades", Unit='kg/l');
-	lambda(2) as positive (Brief="Calores latente", Unit='kcal/kg');
+	lambda(tamanho) as positive (Brief="Calores latente", Unit='kcal/kg');
 	
 	# SET --> Onde vai colocar o nome numerico do parametro
 	# Reparar que 1, 2, 3 sao referentes a ordem nos vetores
@@ -34,9 +34,9 @@ Model corrente
 	# Variaveis que podem mudar durante a analise
 	VARIABLES
 	W as positive (Brief="Vazao massica total da corrente", Unit='kg/h');
-	x(2) as fraction (Brief="Vetor de fracao massica de cada componente");
+	x(tamanho) as fraction (Brief="Vetor de fracao massica de cada componente");
 	T as positive (Brief="Temperatura da corrente", Unit='K');
-	f(2) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
+	f(tamanho) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
 	som_comp as positive (Brief="Soma das composicoes");
 	
 	EQUATIONS
@@ -96,10 +96,10 @@ Model trocador_calor
 	# out --> Corrente de saida
 	# Trocador de calor, indentificar: Quente e Fria
 	VARIABLES
-	in feed as corrente (Brief="Corente de entrada da alimentacao");
-	out resfriada as corrente (Brief="Corente de saida resfriada");
-	in reciclo as corrente (Brief="Corente de reciclo");
-	out aquecida as corrente (Brief="Corente de saida aquecida");
+	in in_1_troca as corrente (Brief="Corente de entrada da alimentacao");
+	out out_5_troca as corrente (Brief="Corente de saida resfriada");
+	in in_4_troca as corrente (Brief="Corente de reciclo");
+	out out_2_troca as corrente (Brief="Corente de saida aquecida");
 	Q as positive (Brief="Calor trocado entre as correntes", Unit='kcal/h');	
 	At as positive (Brief="Area util de troca terminca", Unit='m^2');
 	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
@@ -109,22 +109,22 @@ Model trocador_calor
 	EQUATIONS
 	
 	"Balance de massa por componente corrente fria"
-	feed.f = aquecida.f;
+	in_1_troca.f = out_2_troca.f;
 
 	"Balance de massa por componente corrente quente"
-	reciclo.f = resfriada.f;
+	in_4_troca.f = out_5_troca.f;
 	
 	"Composicao resfriada saida"
-	sum(resfriada.x) = 1;
+	sum(out_5_troca.x) = 1;
 	
 	"Composicao aquecida"
-	sum(aquecida.x) = 1;
+	sum(out_2_troca.x) = 1;
 	
 	"Delta T de approach 1"
-	DT1 = reciclo.T - aquecida.T;
+	DT1 = in_4_troca.T - out_2_troca.T;
 	
 	"Delta T de approach 1"
-	DT2 = resfriada.T - feed.T;
+	DT2 = out_5_troca.T - in_1_troca.T;
 
 	"Dif media logaritmica de temperaturas"
 	DTML*(ln(DT1/DT2)) = (DT1-DT2);
@@ -134,11 +134,11 @@ Model trocador_calor
 
 	# + feed.f(2)*aquecida.Cp(2)
 	"Balanco de Energia corrente fria"
-	Q = (sum(feed.Cp*feed.f))*(aquecida.T-feed.T);
+	Q = (sum(in_1_troca.Cp*in_1_troca.f))*(out_2_troca.T-in_1_troca.T);
 	
 	# + reciclo.f(2)*reciclo.Cp(2)
 	"Balanco de Energia corrente quente"
-	Q = (sum(reciclo.Cp*reciclo.f))*(reciclo.T-resfriada.T);
+	Q = (sum(in_4_troca.Cp*in_4_troca.f))*(in_4_troca.T-out_5_troca.T);
 
 	
 end
@@ -146,15 +146,15 @@ end
 FlowSheet teste_trocador_calor
 	
 	DEVICES
-	Feed as fonte;
-	Reciclo as fonte;
+	In_1_troca as fonte;
+	In_4_troca as fonte;
 	Trocador_calor as trocador_calor;
 	
 	CONNECTIONS
 	# Preciso conectar uma saida com uma entrada
 	# Analogia da tomada
-	Feed.outlet to Trocador_calor.feed;
-	Reciclo.outlet to Trocador_calor.reciclo;
+	In_1_troca.outlet to Trocador_calor.in_1_troca;
+	In_4_troca.outlet to Trocador_calor.in_4_troca;
 	
 	SPECIFY
 	# Para trocador de calor: Só preciso definir uma temperatura de saída	
@@ -162,17 +162,17 @@ FlowSheet teste_trocador_calor
 	# Mudar o nome de UMA variável, vai aparecer outras linhas dependentes!
 	# Maneira de aproveitar o código!
 	
-	Feed.outlet.W = 5000*'kg/h';
-	Feed.outlet.T = 30*'K';
-	Feed.outlet.x = [0.2, 0.8];
+	In_1_troca.outlet.W = 5000*'kg/h';
+	In_1_troca.outlet.T = 30*'K';
+	In_1_troca.outlet.x = [0.2, 0.8];
 	
-	Reciclo.outlet.W = 1000*'kg/h';
-	Reciclo.outlet.T = 80*'K';
-	Reciclo.outlet.x = [0.4, 0.6];	
+	In_4_troca.outlet.W = 2500*'kg/h';
+	In_4_troca.outlet.T = 100*'K';
+	In_4_troca.outlet.x = [0.4, 0.6];	
 	
 	#Reciclo.outlet.T = 100*'K';
 	
-	Trocador_calor.resfriada.T = 45*'K';
+	Trocador_calor.out_5_troca.T = 45*'K';
 	#Trocador_calor.resfriada.x(1) = 0.4;
 	#Trocador_calor.resfriada.x(2) = 0.6;
 	
@@ -261,17 +261,118 @@ FlowSheet teste_resfriador
 		
 	SPECIFY
 	
+	Alimentacao.outlet.W = 5000*'kg/h';
 	Alimentacao.outlet.T = 30*'K';
-	Alimentacao.outlet.W = 50000*'kg/h';
-	Alimentacao.outlet.x(1) = 0.2;
+	Alimentacao.outlet.x = [0.2, 0.8];
 	
-	#Agua.outlet.T = 100*'K';
-	# Agua.outlet.x = [0, 0, 1];
+	Reciclo.outlet.W = 2500*'kg/h';
+	Reciclo.outlet.T = 100*'K';
+	Reciclo.outlet.x = [0.4, 0.6];	
+	
+	#Reciclo.outlet.T = 100*'K';
 	
 	Resfriador.resfriada.T = 45*'K';
-	Resfriador.resfriada.x(1) = 0.4;
+	#Trocador_calor.resfriada.x(1) = 0.4;
+	#Trocador_calor.resfriada.x(2) = 0.6;
+	
 		
 	OPTIONS
 	Dynamic = false;
 
 end
+
+Model evaporador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/evaporador";
+	
+	PARAMETERS
+	Ue as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ue = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	# feed --> in_2_evapo
+	# benzeno --> out_3_evapo
+	# produto --> out_4_evapo
+	# vapor --> in_6_evapo
+	# condensado --> out_7_evapo
+	in in_2_evapo as corrente (Brief="Corrente de entrada da alimentacao", PosX=0, PosY=0.53);
+	# agua evaporada seria a corrente de benzeno? Aqui estava benzeno
+	out out_3_evapo as corrente (Brief="Corente de saida do benzeno", PosX=0.65, PosY=0);
+	out out_4_evapo as corrente (Brief="Corente de saida do produto", PosX=1, PosY=0.96);
+	in in_6_evapo as corrente (Brief="Corente de entrada do vapor", PosX=1, PosY=0.65);
+	out out_7_evapo as corrente (Brief="Corente de saida do condensado", PosX=0, PosY=0.88);
+	Q as positive (Brief="Calor fornecido ao evaporador", Unit='kcal/h');
+	T as positive (Brief="Temperatura do equipamento", Unit='K');
+	Ae as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente vapor"
+	in_6_evapo.f = out_7_evapo.f;
+	
+	"Soma das composicoes"
+	sum(out_7_evapo.x) = 1;
+	
+	"Balanco de energia do vapor"
+	Q = in_6_evapo.W*in_6_evapo.lambda(in_6_evapo.Agua);
+	
+	"Balanco de massa por componentes corrente principal"
+	in_2_evapo.f = out_3_evapo.f + out_4_evapo.f;
+	
+	"Soma das composicoes"
+	sum(out_3_evapo.x) = 1;
+	sum(out_4_evapo.x) = 1;
+	
+	"Nao ha AcBenz nem agua no benzeno" 
+	out_3_evapo.x(out_3_evapo.Soluto) = 0;
+	#out_3_evapo.x(out_3_evapo.Agua) = 1;
+	
+	"Balanco de corrente principal"
+	Q = sum(in_2_evapo.f*in_2_evapo.Cp)*(T-in_2_evapo.T) + out_3_evapo.W*out_3_evapo.lambda(out_3_evapo.Agua); 
+	
+	"Area"
+	Q = Ue*Ae*(in_6_evapo.T-out_3_evapo.T);
+	
+	"Equilibrio termico"
+	out_3_evapo.T = T;
+	out_4_evapo.T = T;
+	
+	"Vapor so muda de fase"
+	out_7_evapo.T = in_6_evapo.T; 
+end
+
+FlowSheet teste_evaporador
+	
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Evaporador.in_2_evapo;
+	Vapor.outlet to Evaporador.in_6_evapo;
+		
+	SPECIFY
+	
+	Feed.outlet.T = 54.55*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.f = [1000, 4000]*'kg/h';
+	
+	Vapor.outlet.T = 150*'K';
+	Vapor.outlet.x = [0, 1];
+	
+	Evaporador.T = 100*'K';
+	Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.Soluto) = 0.4;
+	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
+	
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
