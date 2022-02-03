@@ -163,16 +163,16 @@ FlowSheet teste_trocador_calor
 	# Maneira de aproveitar o código!
 	
 	In_1_troca.outlet.W = 5000*'kg/h';
-	In_1_troca.outlet.T = 30*'K';
+	In_1_troca.outlet.T = (30+273.15)*'K';
 	In_1_troca.outlet.x = [0.2, 0.8];
 	
 	In_4_troca.outlet.W = 2500*'kg/h';
-	In_4_troca.outlet.T = 100*'K';
+	In_4_troca.outlet.T = (100+273.15)*'K';
 	In_4_troca.outlet.x = [0.4, 0.6];	
 	
 	#Reciclo.outlet.T = 100*'K';
 	
-	Trocador_calor.out_5_troca.T = 45*'K';
+	Trocador_calor.out_5_troca.T = (45+273.15)*'K';
 	#Trocador_calor.resfriada.x(1) = 0.4;
 	#Trocador_calor.resfriada.x(2) = 0.6;
 	
@@ -262,16 +262,16 @@ FlowSheet teste_resfriador
 	SPECIFY
 	
 	Alimentacao.outlet.W = 5000*'kg/h';
-	Alimentacao.outlet.T = 30*'K';
+	Alimentacao.outlet.T = (30+273.15)*'K';
 	Alimentacao.outlet.x = [0.2, 0.8];
 	
 	Reciclo.outlet.W = 2500*'kg/h';
-	Reciclo.outlet.T = 100*'K';
+	Reciclo.outlet.T = (100+273.15)*'K';
 	Reciclo.outlet.x = [0.4, 0.6];	
 	
 	#Reciclo.outlet.T = 100*'K';
 	
-	Resfriador.resfriada.T = 45*'K';
+	Resfriador.resfriada.T = (45+273.15)*'K';
 	#Trocador_calor.resfriada.x(1) = 0.4;
 	#Trocador_calor.resfriada.x(2) = 0.6;
 	
@@ -358,21 +358,94 @@ FlowSheet teste_evaporador
 		
 	SPECIFY
 	
-	Feed.outlet.T = 54.55*'K';
+	Feed.outlet.T = 327.594*'K';
 	Feed.outlet.W = 5000*'kg/h';
-	Feed.outlet.f = [1000, 4000]*'kg/h';
+	Feed.outlet.x = [0.2, 0.8];
 	
-	Vapor.outlet.T = 150*'K';
+	Vapor.outlet.T = (150+273.15)*'K';
 	Vapor.outlet.x = [0, 1];
 	
-	Evaporador.T = 100*'K';
-	Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.Soluto) = 0.4;
+	Evaporador.T = (100+273.15)*'K';
+	Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.Soluto) = 0.6;
 	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
-	
 	
 	
 	OPTIONS
 	Dynamic = false;
 
+end
+
+FlowSheet Evaporador
+	
+	PARAMETERS
+	k as positive;
+	pW as positive (Unit = 'US$/kg');
+	pAt as positive (Unit = 'US$/kg');
+	pAe as positive (Unit = 'US$/kg');
+	
+	SET
+	k = 8000;
+	pW = 0.01*'R$/kg';
+	pAt = 0.4*'R$/(kg*m^2)';
+	pAe = 0.6*'R$/(kg*m^2)';
+	
+	
+	VARIABLES
+	W as positive (Unit = 'kg/h');
+	At as positive (Unit = 'm^2');
+	Ae as positive (Unit = 'm^2');
+	CT as positive (Unit = 'US$/h');
+	
+	EQUATIONS
+	CT = k*(pW*W + pAt*(At)^0.5 + pAe*(Ae)^0.5)/8760; 
+	
+	SPECIFY
+	W = 10000*'kg/h';
+	At = 200*'m^2';
+	Ae = 220*'m^2';
+	#x0 = 0.02;
+	#x = 0.01;
+	#y = 0.03;
+	#W = 2500*'kg/h';
+	
+	
+	OPTIONS
+	Dynamic = false;
+	
+end
+
+CaseStudy CS as Evaporador
+	
+	VARY
+	W = [1000:2000:3000];
+	
+	
+	RESPONSE
+	CT;
+
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Optimization Opt as Evaporador 
+	
+	MINIMIZE
+	CT;
+	
+	FREE
+	W;
+	#y;
+	#W;
+	
+	EQUATIONS
+	W<=1000;
+	
+	OPTIONS
+	Dynamic = false;
+	NLPSolveNLA = false;
+	NLPSolver(File = "ipopt_emso",
+			  MaxIterations = 1000,
+			  RelativeAccuracy = 1e-8);
 end
 
