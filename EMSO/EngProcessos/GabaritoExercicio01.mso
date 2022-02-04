@@ -1,0 +1,336 @@
+using "types";
+ 
+Model corrente
+
+	PARAMETERS
+	Soluto as Integer;
+	Agua as Integer;
+	Cp(2) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	#rho(2) as positive (Brief="Densidades", Unit='kg/l');
+	lambda(2) as positive (Brief="Calores latente", Unit='kcal/kg');
+	
+	SET
+	Soluto = 1;
+	Agua = 2;
+	Cp = [0.5, 1]*'kcal/(kg*K)';
+	#rho = [1.272, 0.8834, 1]*'kg/l';
+	lambda = [0, 505]*'kcal/kg';
+	
+	VARIABLES
+	W as positive (Brief="Vazao massica total da corrente", Unit='kg/h');
+	x(2) as fraction (Brief="Vetor de fracao massica de cada componente");
+	T as positive (Brief="Temperatura da corrente", Unit='K', Default=45+273);
+	f(2) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
+	som_comp as positive (Brief="Soma das composicoes");
+	
+	EQUATIONS
+	
+	"Vazao massica de cada componente"
+	f = x*W;
+	
+	"Soma das composicoes"
+	som_comp = sum(x);
+	
+end
+
+Model fonte
+	
+	VARIABLES
+	out outlet as corrente (Brief="Corrente de saida");
+	
+end
+
+FlowSheet teste_fonte
+	
+	DEVICES
+	Fonte as fonte;
+	
+	SPECIFY
+	
+	Fonte.outlet.T = (100+273)*'K';
+	Fonte.outlet.W = 1000*'kg/h';
+	Fonte.outlet.x = [0.4, 0.6];
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Model evaporador
+	
+	PARAMETERS
+	Ue as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ue = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in feed as corrente (Brief="Corrente de entrada da alimentacao", PosX=0, PosY=0.53);
+	out evaporado as corrente (Brief="Corente de saida do benzeno", PosX=0.65, PosY=0);
+	out concentrado as corrente (Brief="Corente de saida do produto", PosX=1, PosY=0.96);
+	in vapor as corrente (Brief="Corente de entrada do vapor", PosX=1, PosY=0.65);
+	out condensado as corrente (Brief="Corente de saida do condensado", PosX=0, PosY=0.88);
+	Q as positive (Brief="Calor fornecido ao evaporador", Unit='kcal/h');
+	T as positive (Brief="Temperatura do equipamento", Unit='K');
+	Ae as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente vapor"
+	vapor.f = condensado.f;
+	
+	"Soma das composicoes"
+	sum(condensado.x) = 1;
+	
+	"Balanco de energia do vapor"
+	Q = vapor.W*vapor.lambda(vapor.Agua);
+	
+	"Balanco de massa por componentes corrente principal"
+	feed.f = evaporado.f + concentrado.f;
+	
+	"Soma das composicoes"
+	sum(evaporado.x) = 1;
+	sum(concentrado.x) = 1;
+	
+	"Nao ha soluto no evaporado" 
+	evaporado.x(evaporado.Soluto) = 0;
+	
+	"Balanco de corrente principal"
+	Q = sum(feed.f*feed.Cp)*(T-feed.T) + evaporado.W*evaporado.lambda(evaporado.Agua); 
+	
+	"Area"
+	Q = Ue*Ae*(vapor.T-evaporado.T);
+	
+	"Equilibrio termico"
+	evaporado.T = T;
+	concentrado.T = T;
+	
+	"Vapor so muda de fase"
+	condensado.T = vapor.T; 
+end
+
+FlowSheet teste_evaporador
+	
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+	
+	SPECIFY
+	
+	Feed.outlet.T = (50+273)*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.x = [0.2, 0.8];
+	
+	Vapor.outlet.T = (150+273)*'K';
+	Vapor.outlet.x = [0, 1];
+	
+	Evaporador.T = (100+273)*'K';
+	Evaporador.concentrado.x(Evaporador.concentrado.Soluto) = 0.6;
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+Model trocador
+	
+	PARAMETERS
+	Ut as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ut = 100*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in quente_in as corrente (Brief="Corrente de entrada do benzeno", PosX=1, PosY=0.5);
+	out quente_out as corrente (Brief="Corrente de saida do benzeno", PosX=0, PosY=0.5);
+	in fria_in as corrente (Brief="Corente de entrada da agua", PosX=0.72, PosY=1);
+	out fria_out as corrente (Brief="Corrente de saida da agua", PosX=0.27, PosY=0);
+	Q as positive (Brief="Calor trocado", Unit='kcal/h');
+	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
+	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
+	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K'); 
+	At as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente quente"
+	quente_in.f = quente_out.f;
+	
+	"Soma das composicoes"
+	sum(quente_out.x) = 1;
+	
+	"Balanco de massa por componentes corrente fria"
+	fria_in.f = fria_out.f;
+	
+	"Soma das composicoes"
+	sum(fria_out.x) = 1;
+		
+	"Balanco de energia da fria"
+	Q = sum(fria_in.f*fria_in.Cp)*(fria_out.T-fria_in.T);
+	
+	"Balanco de energia do quente"
+	Q = sum(quente_in.f*quente_in.Cp)*(quente_in.T-quente_out.T);
+	
+	"Dif de temperaturas de aproach 1"
+	DT1 = quente_in.T-fria_out.T;
+	
+	"Dif de temperaturas de aproach 2"
+	DT2 = quente_out.T-fria_in.T;
+		
+	"Dif media logaritmica de temperaturas"
+	DTML*ln(DT1/DT2) = (DT1-DT2);
+	
+	"Area"
+	Q = Ut*At*DTML;
+	
+end
+
+FlowSheet teste_trocador
+	
+	DEVICES
+	Quente as fonte;
+	Fria as fonte;
+	Trocador as trocador;
+	
+	CONNECTIONS
+	Quente.outlet to Trocador.quente_in;
+	Fria.outlet to Trocador.fria_in;
+		
+	SPECIFY
+	
+	Quente.outlet.T = (100+273)*'K';
+	Quente.outlet.W = 1000*'kg/h';
+	Quente.outlet.x = [0.4, 0.6];
+	
+	Fria.outlet.T = (30+273)*'K';
+	Fria.outlet.x = [0.2, 0.8];
+	
+	Trocador.fria_out.T = (60+273)*'K';
+	Trocador.quente_out.T = (40+273)*'K';
+		
+	OPTIONS
+	Dynamic = false;
+
+end
+
+FlowSheet Dimensionamento
+	
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	
+	Trocador as trocador;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Trocador.fria_in;
+	Trocador.fria_out to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+	Evaporador.concentrado to Trocador.quente_in;
+
+	SPECIFY
+	
+	Feed.outlet.T = (30+273)*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.x = [0.2, 0.8];
+	
+	Vapor.outlet.T = (150+273)*'K';
+	Vapor.outlet.x = [0, 1];
+	
+	Evaporador.T = (100+273)*'K';
+	
+	Trocador.quente_out.x(1) = 0.4;
+	Trocador.quente_out.T = (45+273)*'K';
+	
+	
+	VARIABLES
+	CT as positive (Unit= 'US$/yr');
+	
+	EQUATIONS
+	#unidades: CT [R$/ano]; W6[kg/h]; AT e AE [m^2]
+	CT = 8000*(0.01*Vapor.outlet.W*'h/kg' + 0.4*(Trocador.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr';  
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+FlowSheet Simulacao
+	
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	
+	Trocador as trocador;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Trocador.fria_in;
+	Trocador.fria_out to Evaporador.feed;
+	Vapor.outlet to Evaporador.vapor;
+	Evaporador.concentrado to Trocador.quente_in;
+
+	SPECIFY
+	
+	Feed.outlet.T = (30+273)*'K';
+	Feed.outlet.W = 1.1*5000*'kg/h'; #Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.x = [0.2, 0.8];
+	
+	Vapor.outlet.T = (150+273)*'K';
+	Vapor.outlet.x = [0, 1];
+	
+	Evaporador.T = (100+273)*'K';
+	
+	Trocador.At = 39.9918*'m^2'; #Trocador.quente_out.T = (45+273)*'K';
+	Evaporador.Ae = 58.7*'m^2'; #Trocador.quente_out.x(1) = 0.4;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+CaseStudy CS as Dimensionamento
+	
+	VARY
+	Trocador.quente_out.T = [35+273:0.5:55+273]*'K';
+	
+	RESPONSE
+	CT;
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+Optimization Opt as Dimensionamento 
+	
+	MINIMIZE
+	CT;
+	
+	FREE
+	Trocador.quente_out.T;
+	
+	EQUATIONS
+	Trocador.quente_out.T <= (55+273)*'K';
+	Trocador.quente_out.T >= (35+273)*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	NLPSolveNLA = false;
+	FeasiblePath = true;
+	NLPSolver(#File = "ipopt_emso",
+		      File = "complex",
+			  MaxIterations = 1000,
+			  RelativeAccuracy = 1e-8);
+end
+
+
