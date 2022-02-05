@@ -181,6 +181,7 @@ FlowSheet teste_trocador_calor
 
 end
 
+#*
 Model resfriador
 	
 	ATTRIBUTES
@@ -280,6 +281,7 @@ FlowSheet teste_resfriador
 	Dynamic = false;
 
 end
+*#
 
 Model evaporador
 	
@@ -375,38 +377,84 @@ FlowSheet teste_evaporador
 
 end
 
-FlowSheet Evaporador
+FlowSheet Dimensionamento
 	
-	PARAMETERS
-	k as positive;
-	pW as positive (Unit = 'US$/kg');
-	pAt as positive (Unit = 'US$/kg');
-	pAe as positive (Unit = 'US$/kg');
+	DEVICES
+	In_1_troca as fonte;
+	In_6_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
 	
-	SET
-	k = 8000;
-	pW = 0.01*'R$/kg';
-	pAt = 0.4*'R$/(kg*m^2)';
-	pAe = 0.6*'R$/(kg*m^2)';
-	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_troca.outlet to Trocador_calor.in_1_troca;
+	In_6_evapo.outlet to Evaporador.in_6_evapo;
+	Trocador_calor.out_2_troca to Evaporador.in_2_evapo;
+	Evaporador.out_4_evapo to Trocador_calor.in_4_troca;
 	
 	VARIABLES
-	W as positive (Unit = 'kg/h');
-	At as positive (Unit = 'm^2');
-	Ae as positive (Unit = 'm^2');
-	CT as positive (Unit = 'US$/h');
+	CT as positive (Unit = 'US$/yr');	
 	
 	EQUATIONS
-	CT = k*(pW*W + pAt*(At)^0.5 + pAe*(Ae)^0.5)/8760; 
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_6_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
 	
 	SPECIFY
-	W = 10000*'kg/h';
-	At = 200*'m^2';
-	Ae = 220*'m^2';
-	#x0 = 0.02;
-	#x = 0.01;
-	#y = 0.03;
-	#W = 2500*'kg/h';
+	In_1_troca.outlet.T = (30+273.15)*'K';
+	In_1_troca.outlet.W = 5000*'kg/h';
+	In_1_troca.outlet.x = [0.2, 0.8];
+	
+	In_6_evapo.outlet.T = (150+273.15)*'K';
+	In_6_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = (100+273.15)*'K';
+	
+	Trocador_calor.out_5_troca.x(1) = 0.4;	
+	Trocador_calor.out_5_troca.T = (45+273.15)*'K';	
+		
+	OPTIONS
+	Dynamic = false;
+	
+end
+
+FlowSheet Simulacao
+	
+	DEVICES
+	In_1_troca as fonte;
+	In_6_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_troca.outlet to Trocador_calor.in_1_troca;
+	In_6_evapo.outlet to Evaporador.in_6_evapo;
+	Trocador_calor.out_2_troca to Evaporador.in_2_evapo;
+	Evaporador.out_4_evapo to Trocador_calor.in_4_troca;
+	
+	VARIABLES
+	CT as positive (Unit = 'US$/yr');	
+	
+	EQUATIONS
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_6_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
+	
+	SPECIFY
+	In_1_troca.outlet.T = (30+273.15)*'K';
+	In_1_troca.outlet.W = 5000*'kg/h';
+	In_1_troca.outlet.x = [0.2, 0.8];
+	
+	In_6_evapo.outlet.T = (150+273.15)*'K';
+	In_6_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = (100+273.15)*'K';
+	
+	Trocador_calor.out_5_troca.x(1) = 0.4;	
+	Trocador_calor.out_5_troca.T = (45+273.15)*'K';	
 	
 	
 	OPTIONS
@@ -414,10 +462,11 @@ FlowSheet Evaporador
 	
 end
 
-CaseStudy CS as Evaporador
+
+CaseStudy CS as Dimensionamento
 	
 	VARY
-	W = [1000:2000:3000];
+	Trocador_calor.out_5_troca.T = [(35+273.15):0.5:(55+273.15)];
 	
 	
 	RESPONSE
@@ -427,25 +476,3 @@ CaseStudy CS as Evaporador
 	Dynamic = false;
 
 end
-
-Optimization Opt as Evaporador 
-	
-	MINIMIZE
-	CT;
-	
-	FREE
-	W;
-	#y;
-	#W;
-	
-	EQUATIONS
-	W<=1000;
-	
-	OPTIONS
-	Dynamic = false;
-	NLPSolveNLA = false;
-	NLPSolver(File = "ipopt_emso",
-			  MaxIterations = 1000,
-			  RelativeAccuracy = 1e-8);
-end
-
