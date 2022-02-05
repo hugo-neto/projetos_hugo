@@ -149,7 +149,7 @@ Model aquecedorComVapor
 	in quente_in as corrente (Brief="Corente quente de entrada");
 	out quente_out as corrente (Brief="Corente quente de saida (esfriada)");
 	Q as positive (Brief="Calor trocado entre as correntes", Unit='kcal/h');	
-	At as positive (Brief="Area util de troca terminca", Unit='m^2');
+	Aa as positive (Brief="Area util de troca terminca", Unit='m^2');
 	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
 	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
 	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K');
@@ -188,7 +188,7 @@ Model aquecedorComVapor
 	DTML*(ln(DT1/DT2)) = (DT1-DT2);
 	
 	"Dimensionamento"
-	Q = Ua*At*DTML;	
+	Q = Ua*Aa*DTML;	
 	
 	"Vapor so muda de fase"
 	quente_in.T = quente_out.T;
@@ -239,15 +239,31 @@ FlowSheet Dimensionamento
 	
 	Trocador2.fria_out.T = (Trocador1.quente_out.T*'1/K' - 10)*'K';
 	
-	#*
+	
 	VARIABLES
-	CT as positive (Unit= 'US$/yr');
+	CCt as positive (Brief="Custo de Capital Total de um Trocador", Unit= 'US$/h');
+	Cop as positive (Brief="Custo de Operacao", Unit= 'US$/h');
+	CT as positive (Brief="Custo Total de Operacao da Unidade", Unit= 'US$/h');
 	
 	EQUATIONS
-	#unidades: CT [R$/ano]; W6[kg/h]; AT e AE [m^2]
-	CT = 8000*(0.01*Vapor.outlet.W*'h/kg' + 0.4*(Trocador.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr';  
-	*#
+	CCt = ((80*(Trocador1.At*'1/m^2')^0.6 + 1500) + (80*(Trocador2.At*'1/m^2')^0.6 + 1500) + (80*(AquecedorComVapor.Aa*'1/m^2')^0.6 + 1500))*'US$/h'; 
+	Cop = (0.05*Agua.outlet.W*'h/kg' + 0.15*Vapor.outlet.W*'h/kg')*'US$/h';
+	CT = (CCt + Cop);  
 	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+CaseStudy CS as Dimensionamento
+	
+	VARY
+	Trocador1.quente_out.T = [420:0.5:480]*'K';
+	
+	RESPONSE
+	CCt;
+	Cop;
+	CT;
 	
 	OPTIONS
 	Dynamic = false;
