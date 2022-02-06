@@ -188,7 +188,6 @@ FlowSheet teste_misturador_2
 end
 
 
-
 Model trocador_calor
 	
 	ATTRIBUTES
@@ -249,6 +248,7 @@ Model trocador_calor
 	
 end
 
+
 FlowSheet teste_trocador_calor
 	
 	DEVICES
@@ -257,16 +257,12 @@ FlowSheet teste_trocador_calor
 	Trocador_calor as trocador_calor;
 	
 	CONNECTIONS
-	# Preciso conectar uma saida com uma entrada
-	# Analogia da tomada
-	In_1_troca.outlet to Trocador_calor.in_1_troca;
-	In_4_troca.outlet to Trocador_calor.in_4_troca;
+	In_1_troca.outlet to Trocador_calor.in_3_troca;
+	In_4_troca.outlet to Trocador_calor.in_5_troca;
 	
 	SPECIFY
 	# Para trocador de calor: Só preciso definir uma temperatura de saída	
-	# Aproveitar o código
-	# Mudar o nome de UMA variável, vai aparecer outras linhas dependentes!
-	# Maneira de aproveitar o código!
+	# Codigo aproveitado do exercicio de pratica 01
 	
 	In_1_troca.outlet.W = 5000*'kg/h';
 	In_1_troca.outlet.T = (30+273.15)*'K';
@@ -301,11 +297,6 @@ Model evaporador
 	Ue = 500*'kcal/(h*m^2*K)';
 	
 	VARIABLES
-	# feed --> in_2_evapo
-	# benzeno --> out_3_evapo
-	# produto --> out_4_evapo
-	# vapor --> in_6_evapo
-	# condensado --> out_7_evapo
 	in in_4_evapo as corrente (Brief="Corrente de entrada da alimentacao", PosX=0, PosY=0.53);
 	out out_10_evapo as corrente (Brief="Corente de saida do evaporado", PosX=0.65, PosY=0);
 	out out_5_evapo as corrente (Brief="Corente de saida do produto", PosX=1, PosY=0.96);
@@ -351,7 +342,10 @@ Model evaporador
 	out_9_evapo.T = in_8_evapo.T; 
 end
 
+
 FlowSheet teste_evaporador
+	
+	# Codigo aproveitado da aula de exercicios do ESMO
 	
 	DEVICES
 	Feed as fonte;
@@ -359,8 +353,8 @@ FlowSheet teste_evaporador
 	Evaporador as evaporador;
 	
 	CONNECTIONS
-	Feed.outlet to Evaporador.in_2_evapo;
-	Vapor.outlet to Evaporador.in_6_evapo;
+	Feed.outlet to Evaporador.in_4_evapo;
+	Vapor.outlet to Evaporador.in_8_evapo;
 		
 	SPECIFY
 	
@@ -372,7 +366,7 @@ FlowSheet teste_evaporador
 	Vapor.outlet.x = [0, 1];
 	
 	Evaporador.T = (100+273.15)*'K';
-	Evaporador.out_5_evapo.x(Evaporador.out_4_evapo.Soluto) = 0.6;
+	Evaporador.out_5_evapo.x(Evaporador.out_5_evapo.Soluto) = 0.6;
 	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
 	
 	
@@ -383,7 +377,6 @@ end
 
 
 FlowSheet Dimensionamento
-	
 	
 	DEVICES
 	In_1_mist1 as fonte;
@@ -418,17 +411,16 @@ FlowSheet Dimensionamento
 	In_1_mist1.outlet.T = (30+273)*'K';
 	In_1_mist1.outlet.W = 1000*'kg/h';
 	In_1_mist1.outlet.x = [0.2, 0.8];
-	Misturador1.out_2_mist1.f = [In_1_mist1.outlet.x(1)*In_1_mist1.outlet.W*0.25, In_1_mist1.outlet.x(2)*In_1_mist1.outlet.W*0.25];
 	
 	In_8_evapo.outlet.T = (423)*'K';
 	In_8_evapo.outlet.x = [0, 1];
 	
 	Evaporador.T = (373)*'K';
 	
-	Trocador_calor.in_5_troca.T = (373)*'K';
+	#Trocador_calor.in_5_troca.T = (373)*'K';
 	
 	Misturador2.out_7_mist2.T = 318*'K';
-	Misturador2.out_7_mist2.x = [0.4, 0.6];
+	Misturador2.out_7_mist2.x(1) = 0.4;
 	
 	
 	
