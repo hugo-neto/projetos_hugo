@@ -417,9 +417,10 @@ FlowSheet Dimensionamento
 	Evaporador.T = (373)*'K';
 	
 	Misturador2.out_7_mist2.x(1) = 0.4;
+	
 	Misturador2.out_7_mist2.T = 318*'K';
 	
-	#Trocador_calor.in_5_troca.T = (373)*'K';
+	# Trocador_calor.out_6_troca.T = 337*'K';
 	
 	OPTIONS
 	Dynamic = false;
@@ -484,7 +485,7 @@ end
 CaseStudy CS as Dimensionamento
 	
 	VARY
-	Misturador2.out_7_mist2.T = [(308):0.5:(328)];
+	Misturador2.out_7_troca.T = [(308):0.5:(328)];
 	
 	
 	RESPONSE
