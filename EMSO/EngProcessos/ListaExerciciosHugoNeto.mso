@@ -647,6 +647,9 @@ FlowSheet Sensibilidade3
 end
 
 
+
+
+
 CaseStudy CS as Dimensionamento
 	
 	VARY
@@ -661,3 +664,80 @@ CaseStudy CS as Dimensionamento
 
 end
 
+
+Optimization Opt as Dimensionamento 
+	
+	MINIMIZE
+	CT;
+	
+	FREE
+	Misturador2.out_7_mist2.T;
+	
+	EQUATIONS
+	Misturador2.out_7_mist2.T <= (328)*'K';
+	Misturador2.out_7_mist2.T >= (308)*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	NLPSolveNLA = false;
+	FeasiblePath = true;
+	NLPSolver(#File = "ipopt_emso",
+		      File = "complex",
+			  MaxIterations = 10000,
+			  RelativeAccuracy = 1e-7);
+end
+
+
+FlowSheet DimensionamentoOtimo
+	# Apos rodar o FlowSheet Dimensionamento, salve o arquivo
+	# no seu disco local C:/ para que o arquivo 
+	# Dimensionamento.rlt esteja acessivel as outras funcoes
+	
+	DEVICES
+	In_1_mist1 as fonte;
+	In_8_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
+	Misturador1 as misturador1;
+	Misturador2 as misturador2;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_mist1.outlet to Misturador1.in_1_mist1;
+	In_8_evapo.outlet to Evaporador.in_8_evapo;
+	Misturador1.out_2_mist1 to Misturador2.in_2_mist2;
+	Misturador1.out_3_mist1 to Trocador_calor.in_3_troca;
+	Trocador_calor.out_6_troca to Misturador2.in_6_mist2;
+	Trocador_calor.out_4_troca to Evaporador.in_4_evapo;
+	Evaporador.out_5_evapo to Trocador_calor.in_5_troca;
+	
+	
+	VARIABLES
+	CT as positive (Unit = 'US$/yr');	
+	
+	EQUATIONS
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_8_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1000
+	In_1_mist1.outlet.W = 1000*'kg/h';
+	In_1_mist1.outlet.T = (303)*'K';
+	In_1_mist1.outlet.x = [0.2, 0.8];
+	
+	In_8_evapo.outlet.T = (423)*'K';
+	In_8_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = (373)*'K';
+	
+	Misturador2.out_7_mist2.x(1) = 0.4;
+	Misturador2.out_7_mist2.T = 328*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	
+end
