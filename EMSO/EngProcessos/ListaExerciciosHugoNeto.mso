@@ -1,8 +1,12 @@
 #*
 
 
+ATENCAO: Script necessita do arquivo
+Dimensionamento.rlt no seu disco C:\
+
 Criado por Hugo Neto
-Data 06/02/2022
+Data Inicio: 06/02/2022
+Data Fim: 10/02/2022
 
 Nomenclatura Correntes:
 (in/out)_numero_equipamento
@@ -75,13 +79,14 @@ FlowSheet teste_fonte
 	alimentacao as fonte;
 	
 	SPECIFY
-	alimentacao.outlet.W = 5000*'kg/h';
+	alimentacao.outlet.W = 1000*'kg/h';
 	alimentacao.outlet.T = 30*'K';
 	alimentacao.outlet.x = [0.2, 0.8];
 	
 end
 
 
+# Primeiro misturador faz a divisao da corrente de entrada
 Model misturador1
 	
 	ATTRIBUTES
@@ -102,10 +107,10 @@ Model misturador1
 	sum(out_2_mist1.x) = 1;
 	sum(out_3_mist1.x) = 1;
 	
-	"Balanco de massa entrada e saida"
+	"Balanco de massa entrada e saida da corrente 2"
 	out_2_mist1.f = 0.25*in_1_mist1.f;
 	
-	"Balanco de Temperatura"
+	"Processo e isotentalpico"
 	out_2_mist1.T = in_1_mist1.T;
 	out_3_mist1.T = in_1_mist1.T;
 
@@ -133,6 +138,7 @@ FlowSheet teste_misturador_1
 end
 
 
+# Segundo misturador faz a mistura das correntes quente com a fria
 Model misturador2
 	
 	ATTRIBUTES
@@ -238,10 +244,10 @@ Model trocador_calor
 	Q = Ut*At*DTML;
 
 	"Balanco de Energia corrente fria"
-	Q = (sum(in_3_troca.Cp*in_3_troca.f))*(out_4_troca.T-in_3_troca.T);
+	Q = sum(in_3_troca.Cp*in_3_troca.f)*(out_4_troca.T-in_3_troca.T);
 	
 	"Balanco de Energia corrente quente"
-	Q = (sum(in_5_troca.Cp*in_5_troca.f))*(in_5_troca.T-out_6_troca.T);
+	Q = sum(in_5_troca.Cp*in_5_troca.f)*(in_5_troca.T-out_6_troca.T);
 	
 end
 
@@ -343,7 +349,6 @@ end
 FlowSheet teste_evaporador
 	
 	# Codigo aproveitado da aula de exercicios do ESMO
-	
 	DEVICES
 	Feed as fonte;
 	Vapor as fonte;
@@ -355,14 +360,14 @@ FlowSheet teste_evaporador
 		
 	SPECIFY
 	
-	Feed.outlet.T = 327.594*'K';
+	Feed.outlet.T = (50+273)*'K';
 	Feed.outlet.W = 5000*'kg/h';
 	Feed.outlet.x = [0.2, 0.8];
 	
 	Vapor.outlet.T = (150+273.15)*'K';
 	Vapor.outlet.x = [0, 1];
 	
-	Evaporador.T = (100+273.15)*'K';
+	Evaporador.T = (100+273)*'K';
 	Evaporador.out_5_evapo.x(Evaporador.out_5_evapo.Soluto) = 0.6;
 	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
 	
@@ -374,6 +379,9 @@ end
 
 
 FlowSheet Dimensionamento
+	# Apos rodar o FlowSheet Dimensionamento, salve o arquivo
+	# no seu disco local C:/ para que o arquivo 
+	# Dimensionamento.rlt esteja acessivel as outras funcoes
 	
 	DEVICES
 	In_1_mist1 as fonte;
@@ -417,10 +425,7 @@ FlowSheet Dimensionamento
 	Evaporador.T = (373)*'K';
 	
 	Misturador2.out_7_mist2.x(1) = 0.4;
-	
 	Misturador2.out_7_mist2.T = 318*'K';
-	
-	# Trocador_calor.out_6_troca.T = 337*'K';
 	
 	OPTIONS
 	Dynamic = false;
@@ -463,6 +468,116 @@ FlowSheet Simulacao
 	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
 	# Para estar conforme as solicitacoes: W = 1000
 	In_1_mist1.outlet.T = (30+273)*'K';
+	In_1_mist1.outlet.W = 1.1*1000*'kg/h';
+	In_1_mist1.outlet.x = [0.2, 0.8];
+	
+	In_8_evapo.outlet.T = (423)*'K';
+	In_8_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = (373)*'K';
+	
+	Trocador_calor.At = 1.35108 * 'm^2'; # Misturador2.out_7_mist2.x(1) = 0.4;
+	Evaporador.Ae = 11.74 * 'm^2'; # Misturador2.out_7_mist2.T = 318*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	GuessFile = "C:\Dimensionamento.rlt";
+	
+end
+
+
+FlowSheet Sensibilidade1
+	
+	DEVICES
+	In_1_mist1 as fonte;
+	In_8_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
+	Misturador1 as misturador1;
+	Misturador2 as misturador2;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_mist1.outlet to Misturador1.in_1_mist1;
+	In_8_evapo.outlet to Evaporador.in_8_evapo;
+	Misturador1.out_2_mist1 to Misturador2.in_2_mist2;
+	Misturador1.out_3_mist1 to Trocador_calor.in_3_troca;
+	Trocador_calor.out_6_troca to Misturador2.in_6_mist2;
+	Trocador_calor.out_4_troca to Evaporador.in_4_evapo;
+	Evaporador.out_5_evapo to Trocador_calor.in_5_troca;
+	
+	
+	VARIABLES
+	CT as positive (Unit = 'US$/yr');	
+	
+	EQUATIONS
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_8_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1000
+	In_1_mist1.outlet.T = (30+273)*'K';
+	In_1_mist1.outlet.W = 1.01*1000*'kg/h';
+	In_1_mist1.outlet.x = [0.2, 0.8];
+	
+	In_8_evapo.outlet.T = (423)*'K';
+	In_8_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = (373)*'K';
+	
+	Trocador_calor.At = 1.35108 * 'm^2'; # Misturador2.out_7_mist2.x(1) = 0.4;
+	Evaporador.Ae = 11.74 * 'm^2'; # Misturador2.out_7_mist2.T = 318*'K';
+	
+	# Valores abaixo usado para validar o modelo de sensibilidade
+	#Misturador2.out_7_mist2.x(1) = 0.395479;
+	#Misturador2.out_7_mist2.T = 318.727*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	GuessFile = "C:\Dimensionamento.rlt";
+	
+end
+
+
+FlowSheet Sensibilidade2
+	
+	DEVICES
+	In_1_mist1 as fonte;
+	In_8_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
+	Misturador1 as misturador1;
+	Misturador2 as misturador2;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_mist1.outlet to Misturador1.in_1_mist1;
+	In_8_evapo.outlet to Evaporador.in_8_evapo;
+	Misturador1.out_2_mist1 to Misturador2.in_2_mist2;
+	Misturador1.out_3_mist1 to Trocador_calor.in_3_troca;
+	Trocador_calor.out_6_troca to Misturador2.in_6_mist2;
+	Trocador_calor.out_4_troca to Evaporador.in_4_evapo;
+	Evaporador.out_5_evapo to Trocador_calor.in_5_troca;
+	
+	
+	VARIABLES
+	CT as positive (Unit = 'US$/yr');	
+	
+	EQUATIONS
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_8_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1000
+	In_1_mist1.outlet.T = 1.01*(30+273)*'K';
 	In_1_mist1.outlet.W = 1000*'kg/h';
 	In_1_mist1.outlet.x = [0.2, 0.8];
 	
@@ -471,21 +586,71 @@ FlowSheet Simulacao
 	
 	Evaporador.T = (373)*'K';
 	
-	#Trocador_calor.in_5_troca.T = (373)*'K';
-	
-	Misturador2.out_7_mist2.T = 318*'K';
-	Misturador2.out_7_mist2.x(1) = 0.4;
+	Trocador_calor.At = 1.35108 * 'm^2'; # Misturador2.out_7_mist2.x(1) = 0.4;
+	Evaporador.Ae = 11.74 * 'm^2'; # Misturador2.out_7_mist2.T = 318*'K';
 	
 	OPTIONS
 	Dynamic = false;
+	GuessFile = "C:\Dimensionamento.rlt";
+end
+
+
+FlowSheet Sensibilidade3
 	
+	DEVICES
+	In_1_mist1 as fonte;
+	In_8_evapo as fonte;
+	Trocador_calor as trocador_calor;
+	Evaporador as evaporador;
+	Misturador1 as misturador1;
+	Misturador2 as misturador2;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_mist1.outlet to Misturador1.in_1_mist1;
+	In_8_evapo.outlet to Evaporador.in_8_evapo;
+	Misturador1.out_2_mist1 to Misturador2.in_2_mist2;
+	Misturador1.out_3_mist1 to Trocador_calor.in_3_troca;
+	Trocador_calor.out_6_troca to Misturador2.in_6_mist2;
+	Trocador_calor.out_4_troca to Evaporador.in_4_evapo;
+	Evaporador.out_5_evapo to Trocador_calor.in_5_troca;
+	
+	
+	VARIABLES
+	CT as positive (Unit = 'US$/yr');	
+	
+	EQUATIONS
+	"Calculo do Custo Total"
+	CT = 8000*(0.01*In_8_evapo.outlet.W*'h/kg' + 0.4*(Trocador_calor.At*'1/m^2')^0.5 + 6*(Evaporador.Ae*'1/m^2')^0.5)*'US$/yr'; 
+
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1000
+	In_1_mist1.outlet.T = (30+273)*'K';
+	In_1_mist1.outlet.W = 1000*'kg/h';
+	In_1_mist1.outlet.x = [0.2, 0.8];
+	
+	In_8_evapo.outlet.T = (423)*'K';
+	In_8_evapo.outlet.x = [0, 1];
+	
+	Evaporador.T = 1.01*(373)*'K';
+	
+	Trocador_calor.At = 1.35108 * 'm^2'; # Misturador2.out_7_mist2.x(1) = 0.4;
+	Evaporador.Ae = 11.74 * 'm^2'; # Misturador2.out_7_mist2.T = 318*'K';
+	
+	OPTIONS
+	Dynamic = false;
+	GuessFile = "C:\Dimensionamento.rlt";
 end
 
 
 CaseStudy CS as Dimensionamento
 	
 	VARY
-	Misturador2.out_7_troca.T = [(308):0.5:(328)];
+	Misturador2.out_7_mist2.T = [(308):0.5:(328)];
 	
 	
 	RESPONSE
