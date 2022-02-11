@@ -3,6 +3,7 @@
 
 ATENCAO: Script necessita do arquivo
 Dimensionamento.rlt no seu disco C:\
+Veja linha 485 para mais informacoes
 
 Criado por Hugo Neto
 Data Inicio: 06/02/2022
@@ -647,9 +648,6 @@ FlowSheet Sensibilidade3
 end
 
 
-
-
-
 CaseStudy CS as Dimensionamento
 	
 	VARY
@@ -741,3 +739,4 @@ FlowSheet DimensionamentoOtimo
 	Dynamic = false;
 	
 end
+
