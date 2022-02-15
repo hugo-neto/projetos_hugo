@@ -3,7 +3,7 @@
 
 ATENCAO: Script necessita do arquivo
 Dimensionamento.rlt no seu disco C:\
-Veja linha 485 para mais informacoes
+Veja linha 579 para mais informacoes
 
 Criado por Hugo Neto
 Data Inicio: 15/02/2022
@@ -240,7 +240,7 @@ Model evaporador
 	#in_3_evapo.f = out_5_evapo.f + out_4_evapo.f;
 	
 	"Balanco de massa de A"
-	in_3_evapo.f(in_3_evapo.A) = out_4_evapo.f(out_4_evapo.A);
+	out_4_evapo.f(out_4_evapo.A) = in_3_evapo.f(in_3_evapo.A);
 	
 	"Balanco de massa de C"
 	out_4_evapo.f(out_4_evapo.C) = (in_3_evapo.f(in_3_evapo.C))*(1-rEvap);
@@ -340,10 +340,10 @@ Model reator
 	conv = 0.92*(1-exp(-20*tR*'1/h'));
 	
 	"Balanco de massa de A2"
-	out_2_reato.f(out_2_reato.A) = in_1_reato.f(in_1_reato.A) - in_1_reato.f(in_1_reato.A)*conv;
+	out_2_reato.f(out_2_reato.A) = in_1_reato.f(in_1_reato.A) - (in_1_reato.f(in_1_reato.A))*conv;
 	
 	"Balanco de massa de B2"
-	out_2_reato.f(out_2_reato.B) = in_1_reato.f(in_1_reato.B) + in_1_reato.f(in_1_reato.A)*conv;
+	out_2_reato.f(out_2_reato.B) = in_1_reato.f(in_1_reato.B) + (in_1_reato.f(in_1_reato.A))*conv;
 	
 	"Balanco de C e D e constante"
 	out_2_reato.f(out_2_reato.C) = in_1_reato.f(in_1_reato.C);
@@ -410,8 +410,8 @@ Model extrator
 	#in_2_extra.f + in_8_extra.f = out_3_extra.f + out_9_extra.f;
 	
 	"Extracao de A"
-	out_3_extra.f(out_3_extra.A) = in_2_extra.f(in_2_extra.A)*(rExt); 
-	out_9_extra.f(out_9_extra.A) = in_2_extra.f(in_2_extra.A)*(1-rExt);
+	out_3_extra.f(out_3_extra.A) = (in_2_extra.f(in_2_extra.A))*(rExt); 
+	out_9_extra.f(out_9_extra.A) = (in_2_extra.f(in_2_extra.A))*(1-rExt);
 	
 	"Balanco de massa individual de B"
 	out_3_extra.f(out_3_extra.B) = 0*'kg/h';
@@ -437,7 +437,7 @@ Model extrator
 	KReal = KTeorico*(1-exp(-10*tExt*'1/h')); 
 	
 	"Calculo do K real"
-	KReal = (out_3_extra.x(out_3_extra.A))/out_9_extra.x(out_9_extra.A);
+	KReal = (out_3_extra.x(out_3_extra.A))/(out_9_extra.x(out_9_extra.A));
 	
 	"Balanco de Energia Global"
 	sum(in_2_extra.f*in_2_extra.Cp)*in_2_extra.T+sum(in_8_extra.f*in_8_extra.Cp)*in_8_extra.T = sum(out_3_extra.f*out_3_extra.Cp)*out_3_extra.T+sum(out_9_extra.f*out_9_extra.Cp)*out_9_extra.T;
@@ -519,6 +519,7 @@ FlowSheet Dimensionamento
 	In_7_mistu.outlet to Misturador.in_7_mistu;
 	Misturador.out_8_mistu to Extrator.in_8_extra;	
 	
+	
 	VARIABLES
 	LE as Real (Unit = 'US$/h');	
 	R as Real (Unit = 'US$/h');	
@@ -544,9 +545,10 @@ FlowSheet Dimensionamento
 	"Calculo do Lucro"
 	LE = 0.48*R-0.68*(CMatPrim + Cutil)- 0.54*ISBL;
 	
+	
 	SPECIFY
 	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
-	# Para estar conforme as solicitacoes: W = 1000
+	# Para estar conforme as solicitacoes: W = 1251
 	In_1_reato.outlet.W = 1251*'kg/h';
 	In_1_reato.outlet.T = (300)*'K';
 	In_1_reato.outlet.x = [1,0,0,0];
@@ -574,6 +576,210 @@ FlowSheet Dimensionamento
 	Condensador.out_13_conde.T = 300*'K';
 		
 	OPTIONS
+	GuessFile = "C:\Dimensionamento.rlt";
+	Dynamic = false;
+	
+end
+
+
+FlowSheet Simulacao
+	# Apos rodar o FlowSheet Dimensionamento, salve o arquivo
+	# no seu disco local C:/ para que o arquivo 
+	# Dimensionamento.rlt esteja acessivel as outras funcoes
+	
+	DEVICES
+	In_1_reato as fonte;
+	In_7_mistu as fonte;
+	In_10_evapo as fonte;
+	In_12_conde as fonte;
+	Reator as reator;
+	Extrator as extrator;
+	Evaporador as evaporador;
+	Condensador as condensador;
+	Misturador as misturador;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_reato.outlet to Reator.in_1_reato;
+	Reator.out_2_reato to Extrator.in_2_extra;
+	Extrator.out_3_extra to Evaporador.in_3_evapo;
+	In_10_evapo.outlet to Evaporador.in_10_evapo;
+	Evaporador.out_5_evapo to Condensador.in_5_conde;
+	In_12_conde.outlet to Condensador.in_12_conde;
+	Condensador.out_6_conde to Misturador.in_6_mistu;
+	In_7_mistu.outlet to Misturador.in_7_mistu;
+	Misturador.out_8_mistu to Extrator.in_8_extra;	
+	
+	
+	VARIABLES
+	LE as Real (Unit = 'US$/h');	
+	R as Real (Unit = 'US$/h');	
+	CMatPrim as Real (Unit = 'US$/h');
+	Cutil as Real (Unit = 'US$/h');
+	ISBL as Real (Unit = 'US$/h');
+	
+	EQUATIONS
+	#Unidades: Receita, custos, investimento e lucro em [$/h]; Vazões em [kg/h]; Áreas em [m2], Volumes em [m3] 	
+	
+	"Calculo da Receita"
+	R = 0.09*(Extrator.out_9_extra.f(Extrator.out_9_extra.B)*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Materia Prima"
+	CMatPrim = (0.03*In_1_reato.outlet.W*'h/kg' + 0.005*In_7_mistu.outlet.W*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Utilidades"
+	Cutil = (0.0015*In_10_evapo.outlet.W*'h/kg' + 0.00005*In_12_conde.outlet.W*'h/kg')*'US$/h';	
+	
+	"Calculo do ISBL"
+	ISBL = 0.0006*[272.51*(((Reator.Vr+Extrator.Vext)*'1/m^3')^(0.6))+8352.73*((Evaporador.Ae+Condensador.Ac)*'1/m^2')^(0.5)]*'US$/h';
+	
+	"Calculo do Lucro"
+	LE = 0.48*R-0.68*(CMatPrim + Cutil)- 0.54*ISBL;
+	
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1251
+	In_1_reato.outlet.W = 1.1*1251*'kg/h';
+	In_1_reato.outlet.T = (300)*'K';
+	In_1_reato.outlet.x = [1,0,0,0];
+	
+	In_10_evapo.outlet.T = (420)*'K';
+	#In_10_evapo.outlet.x(In_10_evapo.outlet.D) = 1;
+	In_10_evapo.outlet.x = [0, 0, 0, 1];
+
+	In_12_conde.outlet.T = (285)*'K';
+	#In_12_conde.outlet.x(In_12_conde.outlet.D) = 1;
+	In_12_conde.outlet.x = [0, 0, 0, 1];
+	
+	In_7_mistu.outlet.T = (300)*'K';
+	#In_7_mistu.outlet.x(In_7_mistu.outlet.C) = 1;
+	In_7_mistu.outlet.x = [0, 0, 1, 0];
+	
+	# Somente uma meta de cada equipamento pode ser alterada!! 
+	Reator.Vr = 0.21771 * 'm^3';# Reator.conv = 0.9;	
+	
+	Extrator.Vext = 0.668955 * 'm^3'; # Extrator.tExt = 0.5*'h';
+	Extrator.out_9_extra.x(Extrator.out_9_extra.B) = 0.95; 
+	
+	Evaporador.Ae = 0.787551 * 'm^2'; # Evaporador.rEvap = 0.9;
+	Evaporador.T = (350)*'K';
+	
+	Condensador.Ac = 0.68417 * 'm^2'; # Condensador.out_13_conde.T = 300*'K';
+		
+	OPTIONS
+	GuessFile = "C:\Dimensionamento.rlt";
+	Dynamic = false;
+	
+end
+
+
+CaseStudy CS as Dimensionamento
+	
+	VARY
+	Evaporador.rEvap = [0.75:0.005:0.99];
+	
+	
+	RESPONSE
+	LE;
+
+	OPTIONS
+	GuessFile = "C:\Dimensionamento.rlt";
+	Dynamic = false;
+
+end
+
+
+FlowSheet DimensionamentoOtimo
+	# Apos rodar o FlowSheet Dimensionamento, salve o arquivo
+	# no seu disco local C:/ para que o arquivo 
+	# Dimensionamento.rlt esteja acessivel as outras funcoes
+	
+	DEVICES
+	In_1_reato as fonte;
+	In_7_mistu as fonte;
+	In_10_evapo as fonte;
+	In_12_conde as fonte;
+	Reator as reator;
+	Extrator as extrator;
+	Evaporador as evaporador;
+	Condensador as condensador;
+	Misturador as misturador;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_reato.outlet to Reator.in_1_reato;
+	Reator.out_2_reato to Extrator.in_2_extra;
+	Extrator.out_3_extra to Evaporador.in_3_evapo;
+	In_10_evapo.outlet to Evaporador.in_10_evapo;
+	Evaporador.out_5_evapo to Condensador.in_5_conde;
+	In_12_conde.outlet to Condensador.in_12_conde;
+	Condensador.out_6_conde to Misturador.in_6_mistu;
+	In_7_mistu.outlet to Misturador.in_7_mistu;
+	Misturador.out_8_mistu to Extrator.in_8_extra;	
+	
+	
+	VARIABLES
+	LE as Real (Unit = 'US$/h');	
+	R as Real (Unit = 'US$/h');	
+	CMatPrim as Real (Unit = 'US$/h');
+	Cutil as Real (Unit = 'US$/h');
+	ISBL as Real (Unit = 'US$/h');
+	
+	EQUATIONS
+	#Unidades: Receita, custos, investimento e lucro em [$/h]; Vazões em [kg/h]; Áreas em [m2], Volumes em [m3] 	
+	
+	"Calculo da Receita"
+	R = 0.09*(Extrator.out_9_extra.f(Extrator.out_9_extra.B)*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Materia Prima"
+	CMatPrim = (0.03*In_1_reato.outlet.W*'h/kg' + 0.005*In_7_mistu.outlet.W*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Utilidades"
+	Cutil = (0.0015*In_10_evapo.outlet.W*'h/kg' + 0.00005*In_12_conde.outlet.W*'h/kg')*'US$/h';	
+	
+	"Calculo do ISBL"
+	ISBL = 0.0006*[272.51*(((Reator.Vr+Extrator.Vext)*'1/m^3')^(0.6))+8352.73*((Evaporador.Ae+Condensador.Ac)*'1/m^2')^(0.5)]*'US$/h';
+	
+	"Calculo do Lucro"
+	LE = 0.48*R-0.68*(CMatPrim + Cutil)- 0.54*ISBL;
+	
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1251
+	In_1_reato.outlet.W = 1251*'kg/h';
+	In_1_reato.outlet.T = (300)*'K';
+	In_1_reato.outlet.x = [1,0,0,0];
+	
+	In_10_evapo.outlet.T = (420)*'K';
+	#In_10_evapo.outlet.x(In_10_evapo.outlet.D) = 1;
+	In_10_evapo.outlet.x = [0, 0, 0, 1];
+
+	In_12_conde.outlet.T = (285)*'K';
+	#In_12_conde.outlet.x(In_12_conde.outlet.D) = 1;
+	In_12_conde.outlet.x = [0, 0, 0, 1];
+	
+	In_7_mistu.outlet.T = (300)*'K';
+	#In_7_mistu.outlet.x(In_7_mistu.outlet.C) = 1;
+	In_7_mistu.outlet.x = [0, 0, 1, 0];
+	
+	Reator.conv = 0.9;	
+	
+	Extrator.out_9_extra.x(Extrator.out_9_extra.B) = 0.95;
+	Extrator.tExt = 0.5*'h';
+		
+	Evaporador.T = (350)*'K';
+	Evaporador.rEvap = 0.99;
+	
+	Condensador.out_13_conde.T = 300*'K';
+		
+	OPTIONS
+	GuessFile = "C:\Dimensionamento.rlt";
 	Dynamic = false;
 	
 end
