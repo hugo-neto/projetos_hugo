@@ -186,22 +186,22 @@ end
 FlowSheet teste_condensador
 	
 	DEVICES
-	Benzeno as fonte;
+	Feed as fonte;
 	Agua as fonte;
 	Codensador as condensador;
 	
 	CONNECTIONS
-	Benzeno.outlet to Codensador.benzeno_in;
-	Agua.outlet to Codensador.agua_in;
+	Feed.outlet to Codensador.in_5_conde;
+	Agua.outlet to Codensador.in_12_conde;
 		
 	SPECIFY
 	
-	Benzeno.outlet.T = 80*'K';
-	Benzeno.outlet.W = 36255*'kg/h';
-	Benzeno.outlet.x = [0, 1, 0];
+	Feed.outlet.T = 80*'K';
+	Feed.outlet.W = 36255*'kg/h';
+	Feed.outlet.x = [0, 0, 1, 0];
 	
 	Agua.outlet.T = 15*'K';
-	Agua.outlet.x = [0, 0, 1];
+	Agua.outlet.x = [0, 0, 0, 1];
 	
 	Codensador.out_13_conde.T = 30*'K';
 		
@@ -298,20 +298,16 @@ FlowSheet teste_evaporador
 		
 	SPECIFY
 	
-	Feed.outlet.T = (50+273)*'K';
-	Feed.outlet.W = 5000*'kg/h';
-	Feed.outlet.f(1) = 0.2*5000*'kg/h';
-	Feed.outlet.f(2) = 0*'kg/h';	
-	Feed.outlet.f(3) = 0.8*5000*'kg/h';
-	#Feed.outlet.f = [0.2*5000,0,0.8*5000,0]*'kg/h';
+	Feed.outlet.T = (25+273.15)*'K';
+	Feed.outlet.W = 37545*'kg/h';
+	Feed.outlet.f = [0.1*37545, 0, 37425*0.9, 0]*'kg/h';
 	
-	Vapor.outlet.T = (420)*'K';
-	Vapor.outlet.x(Vapor.outlet.D) = 1;
+	Vapor.outlet.T = (150+273.15)*'K';
+	Vapor.outlet.x = [0, 0, 0, 1];
 	
-	Evaporador.T = (350)*'K';
-	Evaporador.rEvap = 0.9;
-	#Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.A) = 0.8;
-	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
+	Evaporador.T = 80*'K';
+	Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.A) = 0.8;
+	
 	
 	
 	OPTIONS
@@ -454,7 +450,6 @@ end
 
 FlowSheet teste_extrator
 	
-	# Codigo aproveitado da aula de exercicios do ESMO
 	DEVICES
 	Feed as fonte;
 	Solvente as fonte;
@@ -467,21 +462,14 @@ FlowSheet teste_extrator
 	SPECIFY
 	
 	Feed.outlet.T = (300)*'K';
-	Feed.outlet.W = 5000*'kg/h';
-	#Feed.outlet.x(Feed.outlet.A) = [0.1, 0.9, 0, 0];
-	Feed.outlet.x(Feed.outlet.A) = 0.1;	
-	Feed.outlet.x(Feed.outlet.B) = 0.9;
+	Feed.outlet.W = 1251*'kg/h';
+	Feed.outlet.x = [0.1, 0.9, 0, 0];
+	
+	Solvente.outlet.T = (337.5)*'K';
+	Solvente.outlet.x = [0, 0, 1, 0];
 	
 	Extrator.tExt = 0.5*'h';
-	Extrator.out_9_extra.x(Extrator.out_9_extra.B) = 0.95;
-	#Extrator.out_9_extra.W = 4500/0.95*'kg/h';
-	
-	Solvente.outlet.W = 1000*'kg/h';
-	Solvente.outlet.T = 280*'K';
-	Solvente.outlet.x(Solvente.outlet.C) = 1;
-	#Solvente.outlet.x(Solvente.outlet.A) = 0;
-	#Extrator.rExt  = 0.8;
-	
+	Extrator.rExt = 0.526316;
 	
 	OPTIONS
 	Dynamic = false;
@@ -540,7 +528,7 @@ FlowSheet Dimensionamento
 	Cutil = (0.0015*In_10_evapo.outlet.W*'h/kg' + 0.00005*In_12_conde.outlet.W*'h/kg')*'US$/h';	
 	
 	"Calculo do ISBL"
-	ISBL = 0.0006*[272.51*(((Reator.Vr+Extrator.Vext)*'1/m^3')^(0.6))+8352.73*((Evaporador.Ae+Condensador.Ac)*'1/m^2')^(0.5)]*'US$/h';
+	ISBL = 0.0006*(272.51*(((Reator.Vr+Extrator.Vext)*'1/m^3')^(0.6))+8352.73*((Evaporador.Ae+Condensador.Ac)*'1/m^2')^(0.5))*'US$/h';
 	
 	"Calculo do Lucro"
 	LE = 0.48*R-0.68*(CMatPrim + Cutil)- 0.54*ISBL;
