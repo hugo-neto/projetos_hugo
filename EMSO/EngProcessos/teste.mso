@@ -774,7 +774,8 @@ FlowSheet DimensionamentoOtimo
 	Extrator.tExt = 0.5*'h';
 		
 	Evaporador.T = (350)*'K';
-	Evaporador.rEvap = 0.99;
+	# VALOR OTIMIZADO
+	Evaporador.rEvap = 0.75;
 	
 	Condensador.out_13_conde.T = 300*'K';
 		
