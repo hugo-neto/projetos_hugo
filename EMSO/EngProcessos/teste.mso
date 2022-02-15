@@ -1,0 +1,579 @@
+#*
+
+
+ATENCAO: Script necessita do arquivo
+Dimensionamento.rlt no seu disco C:\
+Veja linha 485 para mais informacoes
+
+Criado por Hugo Neto
+Data Inicio: 15/02/2022
+Data Fim: 15/02/2022
+
+Nomenclatura Correntes:
+(in/out)_numero_equipamento
+
+
+*#
+
+
+using "types";
+
+
+Model corrente
+	
+	# Variavel declarada para tamanho do vetor
+	PARAMETERS
+	tamanho as Integer;
+	SET 
+	tamanho = 4;
+	
+	# Parametros sao valores fixos. Que nao muda
+	# Aqui, ha somente a declaracao dos mesmos
+	PARAMETERS
+	A as Integer;
+	B as Integer;
+	C as Integer;
+	D as Integer;
+	Cp(tamanho) as positive (Brief="Capacidades calorificas", Unit='kcal/(kg*K)'); 
+	lambda(tamanho) as positive (Brief="Calores latente", Unit='kcal/kg');
+	rho(tamanho) as positive (Brief="Densidades", Unit='kg/l');
+	
+	SET
+	A = 1;
+	B = 2;
+	C = 3;
+	D = 4;
+	Cp = [0.3, 0.5, 0.8, 1]*'kcal/(kg*K)';	
+	lambda = [0, 0, 95, 500]*'kcal/kg';
+	rho = [1.1, 1.2, 0.8, 1]*'kg/l';
+	
+	# Variaveis que podem mudar durante a analise
+	VARIABLES
+	W as positive (Brief="Vazao massica total da corrente", Unit='kg/h');
+	x(tamanho) as fraction (Brief="Vetor de fracao massica de cada componente");
+	T as positive (Brief="Temperatura da corrente", Unit='K');
+	f(tamanho) as positive (Brief="Vetor de vazao massica de cada componente", Unit='kg/h');
+	som_comp as positive (Brief="Soma das composicoes");
+	
+	EQUATIONS
+	"Vazao massica de cada componente"
+	f = x*W ;
+	
+	# Inplica que preciso dar todos os x's
+	"Soma das composicoes"
+	som_comp = sum(x);
+
+end
+
+
+Model fonte
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/fonte";
+		
+	VARIABLES
+	out outlet as corrente (Brief="Corrente de saida");
+	
+end
+
+
+FlowSheet teste_fonte
+	# É uma boa prática testar o modelo
+	# As vezes, se eu especifico de mais, posso ter
+	# problema (mesmo com G = 0) --> Eq. certas
+	DEVICES
+	alimentacao as fonte;
+	
+	SPECIFY
+	alimentacao.outlet.W = 1000*'kg/h';
+	alimentacao.outlet.T = 30*'K';
+	alimentacao.outlet.x = [0.2, 0.8];
+	
+end
+
+
+# Segundo misturador faz a mistura das correntes quente com a fria
+Model misturador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/misturador";
+	
+	VARIABLES
+	in in_7_mistu as corrente (Brief="Corrente de solvente de reposicao", PosX=1, PosY=0.1);
+	in in_6_mistu as corrente (Brief="Corrente de entrada tratada", PosX=0, PosY=0.1);
+	out out_8_mistu as corrente (Brief="Corrente de saida misturada", PosX=0.5, PosY=1);
+		
+	EQUATIONS
+	
+	"Balanco de massa por componentes na entrada e na saida"
+	in_7_mistu.f + in_6_mistu.f = out_8_mistu.f;
+	
+	"Soma das composicoes de saida"
+	sum(out_8_mistu.x) = 1;
+	
+	"Balanco de energia das correntes em diferentes temperaturas"
+	sum(out_8_mistu.f*out_8_mistu.Cp)*out_8_mistu.T = sum(in_7_mistu.f*in_7_mistu.Cp)*in_7_mistu.T + sum(in_6_mistu.f*in_6_mistu.Cp)*in_6_mistu.T;
+
+end
+
+
+# OK
+Model condensador
+# So entra C no condensador
+
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/trocador";
+	
+	PARAMETERS
+	Uc as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Uc = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in in_5_conde as corrente (Brief="Corrente de entrada do benzeno", PosX=1, PosY=0.5);
+	out out_6_conde as corrente (Brief="Corrente de saida do benzeno", PosX=0, PosY=0.5);
+	in in_12_conde as corrente (Brief="Corente de entrada da agua", PosX=0.72, PosY=1);
+	out out_13_conde as corrente (Brief="Corrente de saida da agua", PosX=0.27, PosY=0);
+	Q as positive (Brief="Calor trocado", Unit='kcal/h');
+	DT1 as positive (Brief="Dif de temperaturas de aproach 1", Unit='K');
+	DT2 as positive (Brief="Dif de temperaturas de aproach 2", Unit='K');
+	DTML as positive (Brief="Dif media logaritmica de temperaturas", Unit='K'); 
+	Ac as positive (Brief="Area util de troca terminca", Unit='m^2');
+	
+	EQUATIONS
+	
+	"Balanco de massa por componentes corrente solvente C"
+	in_5_conde.f = out_6_conde.f;
+	
+	"Soma das composicoes saida solvente C"
+	sum(out_6_conde.x) = 1;
+	
+	"Balanco de massa por componentes corrente utilidades"
+	in_12_conde.f = out_13_conde.f;
+	
+	"Soma das composicoes saida utilidades"
+	sum(out_13_conde.x) = 1;
+		
+	# Utilidades e considerado D
+	"Balanco de energia da agua"
+	Q = in_12_conde.W*in_12_conde.Cp(in_12_conde.D)*(out_13_conde.T-in_12_conde.T);
+	
+	"Balanco de energia de C"
+	Q = in_5_conde.W*in_5_conde.lambda(in_5_conde.C);
+	
+	"Composto C so muda de fase"
+	out_6_conde.T = in_5_conde.T;
+	
+	"Dif de temperaturas de aproach 1"
+	DT1 = in_5_conde.T-out_13_conde.T;
+	
+	"Dif de temperaturas de aproach 2"
+	DT2 = out_6_conde.T-in_12_conde.T;
+		
+	"Dif media logaritmica de temperaturas"
+	DTML = (DT1-DT2)/ln(DT1/DT2);
+	
+	"Area"
+	Q = Uc*Ac*DTML;
+	
+end
+
+
+FlowSheet teste_condensador
+	
+	DEVICES
+	Benzeno as fonte;
+	Agua as fonte;
+	Codensador as condensador;
+	
+	CONNECTIONS
+	Benzeno.outlet to Codensador.benzeno_in;
+	Agua.outlet to Codensador.agua_in;
+		
+	SPECIFY
+	
+	Benzeno.outlet.T = 80*'K';
+	Benzeno.outlet.W = 36255*'kg/h';
+	Benzeno.outlet.x = [0, 1, 0];
+	
+	Agua.outlet.T = 15*'K';
+	Agua.outlet.x = [0, 0, 1];
+	
+	Codensador.out_13_conde.T = 30*'K';
+		
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+Model evaporador
+	
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/evaporador";
+	
+	PARAMETERS
+	Ue as positive (Brief="Coef global de troca termica", Unit='kcal/(h*m^2*K)'); 
+	
+	SET
+	Ue = 500*'kcal/(h*m^2*K)';
+	
+	VARIABLES
+	in in_3_evapo as corrente (Brief="Corrente de entrada da alimentacao (C + A)", PosX=0, PosY=0.53);
+	out out_5_evapo as corrente (Brief="Corente de saida do evaporado C (puro)", PosX=0.65, PosY=0);
+	out out_4_evapo as corrente (Brief="Corente de saida de descarte (C + A)", PosX=1, PosY=0.96);
+	in in_10_evapo as corrente (Brief="Corente de entrada do vapor D (puro)", PosX=1, PosY=0.65);
+	out out_11_evapo as corrente (Brief="Corente de saida do condensado D (puro)", PosX=0, PosY=0.88);
+	Q as positive (Brief="Calor fornecido ao evaporador", Unit='kcal/h');
+	T as positive (Brief="Temperatura do equipamento", Unit='K');
+	Ae as positive (Brief="Area util de troca terminca", Unit='m^2');
+	rEvap as fraction (Brief="Razao de evaporado");
+	
+	EQUATIONS
+		
+	#"Balanco de massa por componentes corrente principal"
+	#in_3_evapo.f = out_5_evapo.f + out_4_evapo.f;
+	
+	"Balanco de massa de A"
+	in_3_evapo.f(in_3_evapo.A) = out_4_evapo.f(out_4_evapo.A);
+	
+	"Balanco de massa de C"
+	out_4_evapo.f(out_4_evapo.C) = (in_3_evapo.f(in_3_evapo.C))*(1-rEvap);
+	out_5_evapo.f(out_5_evapo.C) = (in_3_evapo.f(in_3_evapo.C))*(rEvap);
+	
+	"Nao ha componente B nem D na corrente saida" 
+	out_5_evapo.f(out_5_evapo.D) = 0*'kg/h';
+	out_4_evapo.f(out_4_evapo.D) = 0*'kg/h';
+	out_5_evapo.f(out_5_evapo.B) = 0*'kg/h';
+	out_4_evapo.f(out_4_evapo.B) = 0*'kg/h';
+	out_5_evapo.f(out_5_evapo.A) = 0*'kg/h';	
+	#out_5_evapo.x(out_5_evapo.A) = 0;
+
+	"Balanco de massa por componentes corrente vapor"
+	in_10_evapo.f = out_11_evapo.f;
+
+	# "Soma das composicoes"
+	# sum(out_11_evapo.x) = 1;
+	"Soma das composicoes das correntes de saida"
+	sum(out_5_evapo.x) = 1;
+	sum(out_4_evapo.x) = 1;
+	sum(out_11_evapo.x) = 1;
+	
+	"Balanco de energia do vapor"
+	Q = in_10_evapo.W*in_10_evapo.lambda(in_10_evapo.D);	
+	
+	"Balanco de corrente principal"
+	Q = sum(in_3_evapo.f*in_3_evapo.Cp)*(T-in_3_evapo.T) + out_5_evapo.W*out_5_evapo.lambda(out_5_evapo.C); 
+	
+	"Equilibrio termico"
+	out_5_evapo.T = T;
+	out_4_evapo.T = T;
+	
+	"Vapor so muda de fase"
+	out_11_evapo.T = in_10_evapo.T; 
+
+	"Area"
+	Q = Ue*Ae*(in_10_evapo.T-out_5_evapo.T);
+	# Q = Ue*Ae*(in_10_evapo.T-out_5_evapo.T);
+	
+end
+
+
+FlowSheet teste_evaporador
+	
+	# Codigo aproveitado da aula de exercicios do ESMO
+	DEVICES
+	Feed as fonte;
+	Vapor as fonte;
+	Evaporador as evaporador;
+	
+	CONNECTIONS
+	Feed.outlet to Evaporador.in_3_evapo;
+	Vapor.outlet to Evaporador.in_10_evapo;
+		
+	SPECIFY
+	
+	Feed.outlet.T = (50+273)*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.f(1) = 0.2*5000*'kg/h';
+	Feed.outlet.f(2) = 0*'kg/h';	
+	Feed.outlet.f(3) = 0.8*5000*'kg/h';
+	#Feed.outlet.f = [0.2*5000,0,0.8*5000,0]*'kg/h';
+	
+	Vapor.outlet.T = (420)*'K';
+	Vapor.outlet.x(Vapor.outlet.D) = 1;
+	
+	Evaporador.T = (350)*'K';
+	Evaporador.rEvap = 0.9;
+	#Evaporador.out_4_evapo.x(Evaporador.out_4_evapo.A) = 0.8;
+	#Evaporador.out_3_evapo.x(Evaporador.out_3_evapo.Agua) = 1;
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+Model reator
+# So entra C no condensador
+
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/trocador";
+	
+	VARIABLES
+	in in_1_reato as corrente (Brief="Corrente de entrada do reagente puro", PosX=1, PosY=0.5);
+	out out_2_reato as corrente (Brief="Corrente de saida do produto com resquicios do reagente", PosX=0, PosY=0.5);
+	conv as fraction (Brief="Conversao do reator");
+	tR as positive (Brief="Conversao do reator", Unit='h');
+	Vr as positive (Brief="Volume do reator", Unit='m^3');
+	
+	EQUATIONS
+	
+	"Conversao do reator"
+	conv = 0.92*(1-exp(-20*tR*'1/h'));
+	
+	"Balanco de massa de A2"
+	out_2_reato.f(out_2_reato.A) = in_1_reato.f(in_1_reato.A) - in_1_reato.f(in_1_reato.A)*conv;
+	
+	"Balanco de massa de B2"
+	out_2_reato.f(out_2_reato.B) = in_1_reato.f(in_1_reato.B) + in_1_reato.f(in_1_reato.A)*conv;
+	
+	"Balanco de C e D e constante"
+	out_2_reato.f(out_2_reato.C) = in_1_reato.f(in_1_reato.C);
+	out_2_reato.f(out_2_reato.D) = in_1_reato.f(in_1_reato.D);
+	
+	"Soma da corrente de saida"
+	sum(out_2_reato.x) = 1;
+	
+	"Reator isotermico"
+	out_2_reato.T = in_1_reato.T;
+	
+	"Volume do reator"
+	Vr = (sum(in_1_reato.f/in_1_reato.rho))*tR;
+	
+end
+
+
+FlowSheet teste_reator
+	
+	# Codigo aproveitado da aula de exercicios do ESMO
+	DEVICES
+	Feed as fonte;
+	Reator as reator;
+	
+	CONNECTIONS
+	Feed.outlet to Reator.in_1_reato;
+		
+	SPECIFY
+	
+	Feed.outlet.T = (300)*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	Feed.outlet.x = [1, 0, 0, 0];
+	Reator.conv = 0.9;
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+Model extrator
+# So entra C no condensador
+
+	ATTRIBUTES
+	Pallete = true;
+	Icon = "Icons/trocador";
+	
+	VARIABLES
+	in in_2_extra as corrente (Brief="Corrente de alimentacao de produto do extrator", PosX=1, PosY=0.5);
+	in in_8_extra as corrente (Brief="Corrente de alimentacao de solvente do extrator", PosX=1, PosY=0.5);
+	out out_3_extra as corrente (Brief="Corrente de saida do solvente com resquicio de A", PosX=0, PosY=0.5);
+	out out_9_extra as corrente (Brief="Corrente de saida do produto com resquicio de A", PosX=0, PosY=0.5);
+	rExt as fraction (Brief="Conversao do reator");
+	tExt as positive (Brief="Conversao do reator", Unit='h');
+	Vext as positive (Brief="Volume do reator", Unit='m^3');
+	TExt as positive (Brief="Temperatura do Extrator", Unit='K');
+	KReal as positive (Brief="Valor de KReal");
+	KTeorico as positive (Brief="Valor de KTeorico");
+	
+	EQUATIONS
+	
+	#"Balanco de Massa Global"
+	#in_2_extra.f + in_8_extra.f = out_3_extra.f + out_9_extra.f;
+	
+	"Extracao de A"
+	out_3_extra.f(out_3_extra.A) = in_2_extra.f(in_2_extra.A)*(rExt); 
+	out_9_extra.f(out_9_extra.A) = in_2_extra.f(in_2_extra.A)*(1-rExt);
+	
+	"Balanco de massa individual de B"
+	out_3_extra.f(out_3_extra.B) = 0*'kg/h';
+	out_9_extra.f(out_9_extra.B) = in_2_extra.f(in_2_extra.B);
+	
+	"Balanco de massa individual de C"
+	out_9_extra.f(out_9_extra.C) = 0*'kg/h';
+	out_3_extra.f(out_3_extra.C) = in_8_extra.f(in_8_extra.C);
+	
+	
+	"Balanco de massa individual de D"
+	out_3_extra.f(out_3_extra.D) = 0*'kg/h';
+	out_9_extra.f(out_9_extra.D) = 0*'kg/h';
+	
+	"Somatorio das correntes de saida"
+	sum(out_3_extra.x) = 1;
+	sum(out_9_extra.x) = 1;	
+	
+	"Calculo do K teorico"
+	KTeorico = 3 + 0.04*(TExt*'1/K'-273); 
+	
+	"Calculo do K real usando K teorico"
+	KReal = KTeorico*(1-exp(-10*tExt*'1/h')); 
+	
+	"Calculo do K real"
+	KReal = (out_3_extra.x(out_3_extra.A))/out_9_extra.x(out_9_extra.A);
+	
+	"Balanco de Energia Global"
+	sum(in_2_extra.f*in_2_extra.Cp)*in_2_extra.T+sum(in_8_extra.f*in_8_extra.Cp)*in_8_extra.T = sum(out_3_extra.f*out_3_extra.Cp)*out_3_extra.T+sum(out_9_extra.f*out_9_extra.Cp)*out_9_extra.T;
+	
+	"Balanco de Temperatura das correntes de saida do Extrator"
+	out_3_extra.T = TExt;
+	out_9_extra.T = TExt;
+	
+	"Volume do reator"
+	Vext = (sum(in_2_extra.f/in_2_extra.rho) + sum(in_8_extra.f/in_8_extra.rho))*tExt;
+	
+end
+
+
+FlowSheet teste_extrator
+	
+	# Codigo aproveitado da aula de exercicios do ESMO
+	DEVICES
+	Feed as fonte;
+	Solvente as fonte;
+	Extrator as extrator;
+	
+	CONNECTIONS
+	Feed.outlet to Extrator.in_2_extra;
+	Solvente.outlet to Extrator.in_8_extra;
+		
+	SPECIFY
+	
+	Feed.outlet.T = (300)*'K';
+	Feed.outlet.W = 5000*'kg/h';
+	#Feed.outlet.x(Feed.outlet.A) = [0.1, 0.9, 0, 0];
+	Feed.outlet.x(Feed.outlet.A) = 0.1;	
+	Feed.outlet.x(Feed.outlet.B) = 0.9;
+	
+	Extrator.tExt = 0.5*'h';
+	Extrator.out_9_extra.x(Extrator.out_9_extra.B) = 0.95;
+	#Extrator.out_9_extra.W = 4500/0.95*'kg/h';
+	
+	Solvente.outlet.W = 1000*'kg/h';
+	Solvente.outlet.T = 280*'K';
+	Solvente.outlet.x(Solvente.outlet.C) = 1;
+	#Solvente.outlet.x(Solvente.outlet.A) = 0;
+	#Extrator.rExt  = 0.8;
+	
+	
+	OPTIONS
+	Dynamic = false;
+
+end
+
+
+FlowSheet Dimensionamento
+	# Apos rodar o FlowSheet Dimensionamento, salve o arquivo
+	# no seu disco local C:/ para que o arquivo 
+	# Dimensionamento.rlt esteja acessivel as outras funcoes
+	
+	DEVICES
+	In_1_reato as fonte;
+	In_7_mistu as fonte;
+	In_10_evapo as fonte;
+	In_12_conde as fonte;
+	Reator as reator;
+	Extrator as extrator;
+	Evaporador as evaporador;
+	Condensador as condensador;
+	Misturador as misturador;
+	
+	
+	CONNECTIONS
+	# Preciso conectar uma saida com uma entrada
+	# Analogia da tomada
+	In_1_reato.outlet to Reator.in_1_reato;
+	Reator.out_2_reato to Extrator.in_2_extra;
+	Extrator.out_3_extra to Evaporador.in_3_evapo;
+	In_10_evapo.outlet to Evaporador.in_10_evapo;
+	Evaporador.out_5_evapo to Condensador.in_5_conde;
+	In_12_conde.outlet to Condensador.in_12_conde;
+	Condensador.out_6_conde to Misturador.in_6_mistu;
+	In_7_mistu.outlet to Misturador.in_7_mistu;
+	Misturador.out_8_mistu to Extrator.in_8_extra;	
+	
+	VARIABLES
+	LE as Real (Unit = 'US$/h');	
+	R as Real (Unit = 'US$/h');	
+	CMatPrim as Real (Unit = 'US$/h');
+	Cutil as Real (Unit = 'US$/h');
+	ISBL as Real (Unit = 'US$/h');
+	
+	EQUATIONS
+	#Unidades: Receita, custos, investimento e lucro em [$/h]; Vazões em [kg/h]; Áreas em [m2], Volumes em [m3] 	
+	
+	"Calculo da Receita"
+	R = 0.09*(Extrator.out_9_extra.f(Extrator.out_9_extra.B)*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Materia Prima"
+	CMatPrim = (0.03*In_1_reato.outlet.W*'h/kg' + 0.005*In_7_mistu.outlet.W*'h/kg')*'US$/h';
+	
+	"Calculo Custo de Utilidades"
+	Cutil = (0.0015*In_10_evapo.outlet.W*'h/kg' + 0.00005*In_12_conde.outlet.W*'h/kg')*'US$/h';	
+	
+	"Calculo do ISBL"
+	ISBL = 0.0006*[272.51*(((Reator.Vr+Extrator.Vext)*'1/m^3')^(0.6))+8352.73*((Evaporador.Ae+Condensador.Ac)*'1/m^2')^(0.5)]*'US$/h';
+	
+	"Calculo do Lucro"
+	LE = 0.48*R-0.68*(CMatPrim + Cutil)- 0.54*ISBL;
+	
+	SPECIFY
+	# Meu DRE e 118060251 - ultimos 4 digitos -> 251
+	# Para estar conforme as solicitacoes: W = 1000
+	In_1_reato.outlet.W = 1251*'kg/h';
+	In_1_reato.outlet.T = (300)*'K';
+	In_1_reato.outlet.x = [1,0,0,0];
+	
+	In_10_evapo.outlet.T = (420)*'K';
+	#In_10_evapo.outlet.x(In_10_evapo.outlet.D) = 1;
+	In_10_evapo.outlet.x = [0, 0, 0, 1];
+
+	In_12_conde.outlet.T = (285)*'K';
+	#In_12_conde.outlet.x(In_12_conde.outlet.D) = 1;
+	In_12_conde.outlet.x = [0, 0, 0, 1];
+	
+	In_7_mistu.outlet.T = (300)*'K';
+	#In_7_mistu.outlet.x(In_7_mistu.outlet.C) = 1;
+	In_7_mistu.outlet.x = [0, 0, 1, 0];
+	
+	Reator.conv = 0.9;	
+	
+	Extrator.out_9_extra.x(Extrator.out_9_extra.B) = 0.95;
+	Extrator.tExt = 0.5*'h';
+		
+	Evaporador.T = (350)*'K';
+	Evaporador.rEvap = 0.9;
+	
+	Condensador.out_13_conde.T = 300*'K';
+		
+	OPTIONS
+	Dynamic = false;
+	
+end
